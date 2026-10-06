@@ -1,0 +1,307 @@
+// Oman Traditional Shooting — Phase One MVP
+// Hierarchy (TOUR-02): Event → Competition (→ sub-competitions) → Date → Group → Slot (one per target)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SHOOTER
+  ADMIN
+  JUDGE
+  RECEPTION
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum GenderRule {
+  MALE
+  FEMALE
+  ANY
+}
+
+enum Hand {
+  RIGHT
+  LEFT
+}
+
+enum EventStatus {
+  DRAFT // invisible to public; admins can test-book (bookings flagged isTest)
+  PUBLISHED
+  CLOSED
+}
+
+enum CompFormat {
+  INDIVIDUAL
+  TEAM
+}
+
+enum VenueType {
+  INDOOR_AC
+  INDOOR
+  OUTDOOR
+}
+
+enum SlotState {
+  FREE
+  HELD // in a shooter's cart, expires after 10 min (BOOK-04)
+  PENDING // order placed, awaiting payment (gateway / cash / transfer)
+  BOOKED
+  BLOCKED // disabled by admin
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  THAWANI
+  BANK_TRANSFER
+  CASH
+  FREE
+}
+
+enum PaymentStatus {
+  PENDING // awaiting gateway
+  PENDING_CASH
+  PENDING_REVIEW // transfer receipt uploaded
+  PAID
+  REJECTED
+  EXPIRED
+  CANCELLED
+  REFUND_DUE // gateway reported payment after the booking expired and the target was resold
+}
+
+enum Attendance {
+  UNKNOWN
+  PRESENT
+  ABSENT
+}
+
+model User {
+  id          String     @id @default(cuid())
+  civilId     String     @unique
+  memberNo    Int        @unique @default(autoincrement())
+  fullName    String
+  tribe       String?
+  mobile      String
+  email       String?
+  gender      Gender
+  hand        Hand       @default(RIGHT)
+  dob         DateTime?  @db.Date
+  wilayat     String?
+  governorate String?
+  photo       String? // data URL (MVP) — move to private object storage + signed URLs (SEC-07)
+  idExpiry    DateTime? @db.Date // read from the ID card (MEM-02)
+  idScanned   Boolean   @default(false) // card was scanned and its number matched the verified civil ID
+  createdAt   DateTime @db.Timestamptz(3)   @default(now())
+  updatedAt   DateTime @db.Timestamptz(3)   @updatedAt
+  roles       UserRole[]
+  bookings    Booking[]
+  orders      Order[]
+  slots       Slot[]
+}
+
+// RBAC-02: roles live in their own table, never on the user row
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  role      Role
+  grantedBy String?
+  createdAt DateTime @db.Timestamptz(3) @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  civilId    String
+  codeHash   String // sha256(salt + code) — MEM-05
+  salt       String
+  expiresAt  DateTime @db.Timestamptz(3)
+  attempts   Int       @default(0)
+  consumedAt DateTime? @db.Timestamptz(3)
+  createdAt  DateTime @db.Timestamptz(3)  @default(now())
+
+  @@index([civilId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  reason    String?
+  data      Json?
+  createdAt DateTime @db.Timestamptz(3) @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model Event {
+  id                   String        @id @default(cuid())
+  slug                 String        @unique
+  nameEn               String
+  nameAr               String
+  descriptionEn        String?
+  descriptionAr        String?
+  location             String
+  season               Int
+  startDate            DateTime      @db.Date
+  endDate              DateTime      @db.Date
+  regOpensAt           DateTime @db.Timestamptz(3)
+  regClosesAt          DateTime @db.Timestamptz(3)
+  status               EventStatus   @default(DRAFT)
+  holdMinutes          Int           @default(10)
+  cancelHours          Int           @default(48)
+  maxCancellations     Int           @default(2)
+  paymentDeadlineHours Int           @default(24)
+  allowCash            Boolean       @default(true)
+  allowTransfer        Boolean       @default(true)
+  participantSeq       Int           @default(0)
+  publishedAt          DateTime? @db.Timestamptz(3)
+  createdAt            DateTime @db.Timestamptz(3)      @default(now())
+  updatedAt            DateTime @db.Timestamptz(3)      @updatedAt
+  competitions         Competition[]
+}
+
+model Competition {
+  id              String        @id @default(cuid())
+  eventId         String
+  parentId        String?
+  nameEn          String
+  nameAr          String
+  firearm         String        @default("Traditional rifle (Saktoun)")
+  genderRule      GenderRule    @default(ANY)
+  minAge          Int?
+  maxAge          Int?
+  format          CompFormat    @default(INDIVIDUAL)
+  teamSize        Int?
+  shotsPerSeries  Int           @default(10)
+  seriesCount     Int           @default(1)
+  maxScorePerShot Int           @default(10)
+  venueType       VenueType     @default(OUTDOOR)
+  targetsPerGroup Int           @default(10)
+  leftHandTargets Int[]         @default([])
+  enforceHand     Boolean       @default(true)
+  prices          Decimal[]     @default([]) @db.Decimal(10, 3) // price by attempt number (TOUR-03)
+  maxParticipants Int?
+  finalistsCount  Int           @default(8)
+  sortOrder       Int           @default(0)
+  resultsLockedAt DateTime? @db.Timestamptz(3)
+  createdAt       DateTime @db.Timestamptz(3)      @default(now())
+  event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  parent          Competition?  @relation("Sub", fields: [parentId], references: [id], onDelete: Cascade)
+  children        Competition[] @relation("Sub")
+  groups          Group[]
+  bookings        Booking[]
+
+  @@index([eventId])
+}
+
+model Group {
+  id            String      @id @default(cuid())
+  competitionId String
+  label         String
+  date          DateTime    @db.Date
+  startsAt      DateTime @db.Timestamptz(3)
+  endsAt        DateTime @db.Timestamptz(3)
+  isFinal       Boolean     @default(false)
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  slots         Slot[]
+  bookings      Booking[]
+
+  @@index([competitionId, date])
+}
+
+// One row per physical target. Booking a target = one atomic compare-and-set UPDATE on this row.
+model Slot {
+  id            String    @id @default(cuid())
+  groupId       String
+  targetNo      Int
+  isLeftHand    Boolean   @default(false)
+  state         SlotState @default(FREE)
+  userId        String?
+  holdExpiresAt DateTime? @db.Timestamptz(3)
+  version       Int       @default(0)
+  updatedAt     DateTime @db.Timestamptz(3)  @updatedAt
+  group         Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user          User?     @relation(fields: [userId], references: [id])
+  bookings      Booking[]
+
+  @@unique([groupId, targetNo])
+  @@unique([groupId, userId]) // one target per shooter per group (NULLs are distinct in Postgres)
+  @@index([state, holdExpiresAt])
+  @@index([userId, state])
+}
+
+model Order {
+  id           String        @id @default(cuid())
+  ref          String        @unique
+  userId       String
+  total        Decimal       @db.Decimal(10, 3)
+  method       PaymentMethod
+  status       PaymentStatus
+  receipt      String? // data URL (MVP)
+  gatewayRef   String?
+  deadlineAt   DateTime? @db.Timestamptz(3)
+  paidAt       DateTime? @db.Timestamptz(3)
+  reviewedById String?
+  reviewNote   String?
+  isTest       Boolean       @default(false)
+  createdAt    DateTime @db.Timestamptz(3)      @default(now())
+  user         User          @relation(fields: [userId], references: [id])
+  bookings     Booking[]
+
+  @@index([status])
+  @@index([userId])
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  userId        String
+  slotId        String?
+  groupId       String
+  competitionId String
+  orderId       String?
+  targetNo      Int
+  attemptNo     Int           @default(1)
+  price         Decimal       @db.Decimal(10, 3)
+  status        BookingStatus @default(PENDING_PAYMENT)
+  participantNo Int?
+  isTest        Boolean       @default(false)
+  attendance    Attendance    @default(UNKNOWN)
+  checkedInAt   DateTime? @db.Timestamptz(3)
+  checkedInBy   String?
+  series        Int[]         @default([]) // series totals, entered by judges
+  total         Int?
+  xCount        Int?          // inner tens, used for tie-breaks
+  scoredAt      DateTime? @db.Timestamptz(3)
+  createdAt     DateTime @db.Timestamptz(3)      @default(now())
+  cancelledAt   DateTime? @db.Timestamptz(3)
+  selfCancelled Boolean       @default(false) // counts toward the per-event cancellation limit (BOOK-08)
+  user          User          @relation(fields: [userId], references: [id])
+  slot          Slot?         @relation(fields: [slotId], references: [id], onDelete: SetNull)
+  group         Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  competition   Competition   @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  order         Order?        @relation(fields: [orderId], references: [id])
+
+  @@index([groupId])
+  @@index([competitionId, status])
+  @@index([userId, competitionId])
+  @@index([orderId])
+}

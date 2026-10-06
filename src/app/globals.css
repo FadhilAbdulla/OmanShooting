@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* Omani heritage palette: flag red, sand, khanjar silver, deep green */
+@theme {
+  --color-brand-50: #fdf3f3;
+  --color-brand-100: #fbe4e4;
+  --color-brand-200: #f6c8c9;
+  --color-brand-500: #c8102e;
+  --color-brand-600: #a80d26;
+  --color-brand-700: #870b1f;
+  --color-brand-900: #4a0611;
+  --color-sand-50: #fbf8f2;
+  --color-sand-100: #f4ede0;
+  --color-sand-200: #e8dbc2;
+  --color-sand-300: #d6c19b;
+  --color-sand-700: #7a6336;
+  --color-oasis-500: #1f7a4d;
+  --color-oasis-600: #17603c;
+  --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-sand-50);
+  color: #1c1917;
+}
+
+/* Subtle geometric pattern inspired by Omani door carvings */
+.heritage-bg {
+  background-color: var(--color-brand-900);
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(214, 193, 155, 0.12) 2px, transparent 2.5px),
+    radial-gradient(circle at 75% 75%, rgba(214, 193, 155, 0.12) 2px, transparent 2.5px),
+    linear-gradient(45deg, rgba(214, 193, 155, 0.05) 25%, transparent 25%, transparent 75%, rgba(214, 193, 155, 0.05) 75%);
+  background-size: 28px 28px, 28px 28px, 56px 56px;
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+}
