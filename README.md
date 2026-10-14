@@ -14,7 +14,7 @@ npm run db:seed
 npm run dev            # http://localhost:3000
 ```
 
-Sign in with a civil ID and mobile number. Members receive the one-time code on the mobile they registered; new shooters receive it on the number they enter, which becomes their verified mobile. SMS sending is a stub in `src/lib/notify.ts` (codes are printed in the server log) until a provider is connected. With `DEMO_MODE=1` the code is also shown on screen and card payments use a sandbox page; a banner says so on every page. Leave `DEMO_MODE` unset in production once an SMS provider and Thawani keys are configured.
+Sign in with a civil ID and mobile number. Members receive the one-time code on the mobile they registered; new shooters receive it on the number they enter, which becomes their verified mobile. SMS sending is a stub in `src/lib/notify.ts` (codes are printed in the server log) until a provider is connected. **For now every sign-in uses code `123456`** (set `FIXED_OTP=off` to switch to random codes). Demo mode is on by default (set `DEMO_MODE=0` for a real launch): the code is also shown on screen and card payments use a sandbox page; a banner says so on every page. Once an SMS provider and Thawani keys are configured, set `DEMO_MODE=0` and `FIXED_OTP=off`.
 
 See [AUDIT.md](AUDIT.md) for the latest security and correctness review.
 

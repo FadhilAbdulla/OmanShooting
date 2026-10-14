@@ -60,7 +60,7 @@ export function cn(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
-const CODES: Record<number, string> = { 400: "BAD_REQUEST", 401: "UNAUTHENTICATED", 402: "PAYMENT_REQUIRED", 403: "FORBIDDEN", 404: "NOT_FOUND", 409: "CONFLICT", 423: "LOCKED", 429: "RATE_LIMITED" };
+const CODES: Record<number, string> = { 400: "BAD_REQUEST", 401: "UNAUTHENTICATED", 402: "PAYMENT_REQUIRED", 403: "FORBIDDEN", 404: "NOT_FOUND", 409: "CONFLICT", 422: "VALIDATION", 423: "LOCKED", 429: "RATE_LIMITED" };
 
 export class AppError extends Error {
   public code: string;
@@ -71,11 +71,12 @@ export class AppError extends Error {
 }
 
 /**
- * Demo conveniences (OTP shown on screen, sandbox payment page) are never active in production
- * unless DEMO_MODE=1 is set explicitly — and then a banner tells every visitor it is a demo.
+ * Demo conveniences (OTP shown on screen, sandbox payment page, demo banner) are ON by default for this MVP,
+ * so any deployment works without extra configuration. Set DEMO_MODE=0 for a real launch (after an SMS
+ * provider and Thawani keys are configured).
  */
 export function isDemo() {
-  return process.env.DEMO_MODE === "1" || (process.env.NODE_ENV !== "production" && process.env.OTP_DEV_ECHO === "1");
+  return !["0", "false", "off"].includes((process.env.DEMO_MODE ?? "").toLowerCase());
 }
 
 /** Only allow same-site relative redirects (prevents open-redirects via ?next=). */

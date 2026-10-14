@@ -8,14 +8,15 @@ import { normaliseMobile } from "@/lib/oman";
 
 const Body = z.object({
   civilId: z.string().regex(/^\d{6,12}$/, "Civil ID must be 6–12 digits"),
-  mobile: z.string().min(1, "Enter your mobile number"),
+  // Optional for existing members (their code goes to the number on file); required for new shooters
+  mobile: z.string().optional().nullable(),
 });
 
 export const POST = handle(async (req: Request) => {
   const body = Body.parse(await req.json());
   const { civilId } = body;
-  const entered = normaliseMobile(body.mobile);
-  if (!entered) throw new AppError("Enter an Omani mobile number (8 digits starting with 7 or 9)", 422);
+  const entered = body.mobile ? normaliseMobile(body.mobile) : null;
+  if (body.mobile && !entered) throw new AppError("Enter an Omani mobile number (8 digits starting with 7 or 9)", 422);
 
   // Throttle per civil ID: 3 per minute and 10 per hour (caps brute-force to ~50 guesses/hour)
   const [perMinute, perHour] = await Promise.all([
@@ -27,11 +28,13 @@ export const POST = handle(async (req: Request) => {
   // Members get the code on the mobile we already hold for them; new shooters on the number they entered
   // (which becomes their verified mobile after they confirm the code).
   const user = await prisma.user.findUnique({ where: { civilId } });
-  const target = user ? normaliseMobile(user.mobile) ?? user.mobile : entered;
+  if (!user && !entered) throw new AppError("Enter your mobile number so we can text you a verification code", 422);
+  const target = user ? normaliseMobile(user.mobile) ?? user.mobile : entered!;
 
-  // Temporary: FIXED_OTP (e.g. "123456") gives everyone the same code until an SMS provider is connected.
-  // Remove the variable to go back to random codes.
-  const fixed = /^\d{6}$/.test(process.env.FIXED_OTP ?? "") ? process.env.FIXED_OTP! : null;
+  // Temporary for the MVP: everyone uses the same code (default 123456) until an SMS provider is connected.
+  // FIXED_OTP=<6 digits> changes it; FIXED_OTP=off switches back to random codes sent by SMS.
+  const setting = (process.env.FIXED_OTP || "123456").trim(); // unset or empty → default
+  const fixed = /^\d{6}$/.test(setting) ? setting : null;
   const code = fixed ?? String(randomInt(100000, 999999));
   const salt = randomBytes(16).toString("hex");
   await prisma.otpCode.create({

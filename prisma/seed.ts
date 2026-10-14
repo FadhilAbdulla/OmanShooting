@@ -12,6 +12,9 @@ const NAMES = ["Salim Al-Harthy", "Hamad Al-Balushi", "Khalid Al-Rawahi", "Said 
   "Yaqoob Al-Busaidi", "Juma Al-Farsi", "Sami Al-Shidi", "Waleed Al-Mukhaini", "Ibrahim Al-Kalbani", "Tariq Al-Hosni", "Marwan Al-Habsi", "Qais Al-Ismaili"];
 const GOVS = ["Muscat", "Ad Dakhiliyah", "North Al Batinah", "South Al Batinah", "Ash Sharqiyah", "Dhofar", "Ad Dhahirah", "Al Buraimi"];
 
+// Same rule as the app: demo conveniences are on unless DEMO_MODE is 0/false/off
+const demoOn = () => !["0", "false", "off"].includes((process.env.DEMO_MODE ?? "").toLowerCase());
+
 const SEED_CIVIL_IDS = [...Array(3)].map((_, i) => String(10000001 + i)).concat([...Array(40)].map((_, i) => String(20000001 + i)));
 
 /**
@@ -20,7 +23,7 @@ const SEED_CIVIL_IDS = [...Array(3)].map((_, i) => String(10000001 + i)).concat(
  * blocks the refresh.
  */
 async function demoIsStale() {
-  if (process.env.DEMO_MODE !== "1") return false;
+  if (!demoOn()) return false;
   const [otherUsers, otherOrders, live] = await Promise.all([
     prisma.user.count({ where: { civilId: { notIn: SEED_CIVIL_IDS } } }),
     prisma.order.count({ where: { NOT: [{ ref: { startsWith: "ORD-SEED" } }, { ref: "ORD-CASHDEMO" }] } }),
@@ -38,7 +41,7 @@ async function main() {
   // The token is recorded after reseeding, so restarts with the variable still set never wipe again.
   const force = process.env.FORCE_DEMO_RESEED;
   let forced = false;
-  if (force && process.env.DEMO_MODE === "1" && process.argv.includes("--if-empty")) {
+  if (force && demoOn() && process.argv.includes("--if-empty")) {
     const done = await prisma.auditLog.findFirst({ where: { action: "demo.reseed", entityId: force } });
     if (done) console.log(`Forced demo reseed "${force}" already applied — ignoring.`);
     else { console.log(`Forced demo reseed "${force}" requested — wiping and reseeding demo data.`); forced = true; }
