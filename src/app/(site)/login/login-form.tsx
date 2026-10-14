@@ -11,6 +11,8 @@ function Login({ demo }: { demo: boolean }) {
   const r = useRouter();
   const next = safeNext(useSearchParams().get("next"));  // "/" means "no explicit destination"
   const [civilId, setCivilId] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [sentTo, setSentTo] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"id" | "otp">("id");
   const [dev, setDev] = useState<string | null>(null);
@@ -24,14 +26,17 @@ function Login({ demo }: { demo: boolean }) {
 
   async function send(e: React.FormEvent) {
     e.preventDefault(); setBusy(true);
-    try { const res = await api<{ devCode?: string }>("/api/auth/otp", { body: { civilId } }); setDev(res.devCode ?? null); setStep("otp"); setCooldown(30); } catch {}
+    try {
+      const res = await api<{ devCode?: string; sentTo: string }>("/api/auth/otp", { body: { civilId, mobile } });
+      setDev(res.devCode ?? null); setSentTo(res.sentTo); setStep("otp"); setCooldown(30);
+    } catch {}
     setBusy(false);
   }
   async function verify(e: React.FormEvent) {
     e.preventDefault(); setBusy(true);
     try {
       const res = await api<{ register?: boolean; roles?: string[] }>("/api/auth/verify", { body: { civilId, code } });
-      if (res.register) r.push(`/register?next=${encodeURIComponent(next)}`);
+      if (res.register) { r.push(`/register?next=${encodeURIComponent(next)}`); r.refresh(); } // refresh so the header knows onboarding has started
       else {
         // No explicit destination → staff go to the admin console, shooters to their booking dashboard
         const home = res.roles?.some((x) => x !== "SHOOTER") ? "/admin" : "/me";
@@ -44,26 +49,38 @@ function Login({ demo }: { demo: boolean }) {
   return (
     <div className="mx-auto max-w-sm py-8">
       <Card className="space-y-5 p-6">
-        <div className="flex flex-col items-center gap-2 text-center"><Logo className="h-12 w-12" /><h1 className="text-xl font-bold">Sign in or join</h1><p className="text-sm text-stone-600">Enter your civil ID — no password needed. New to the platform? We&apos;ll set up your membership right after you verify.</p></div>
+        <div className="flex flex-col items-center gap-2 text-center"><Logo className="h-12 w-12" /><h1 className="text-xl font-bold">Sign in or join</h1><p className="text-sm text-stone-600">No password needed — we text you a one-time code. New to the platform? We&apos;ll set up your membership right after you verify.</p></div>
         {step === "id" ? (
           <form onSubmit={send} className="space-y-4">
             <Field label="Civil ID number"><input className={inputCls} inputMode="numeric" autoFocus value={civilId} onChange={(e) => setCivilId(e.target.value.replace(/\D/g, ""))} placeholder="e.g. 12345678" /></Field>
-            <Button className="w-full" size="lg" disabled={busy || civilId.length < 6}>Send verification code</Button>
+            <Field label="Mobile number" hint="Members receive the code on the mobile registered with us; new shooters on this number.">
+              <div className="flex">
+                <span className="inline-flex items-center rounded-s-lg border border-e-0 border-sand-300 bg-sand-100 px-3 text-sm text-stone-600" dir="ltr">+968</span>
+                <input className={`${inputCls} rounded-s-none`} inputMode="tel" dir="ltr" value={mobile} onChange={(e) => setMobile(e.target.value.replace(/[^\d]/g, "").slice(0, 8))} placeholder="9XXXXXXX" />
+              </div>
+            </Field>
+            <Button className="w-full" size="lg" disabled={busy || civilId.length < 6 || !/^[79]\d{7}$/.test(mobile)}>Send verification code</Button>
           </form>
         ) : (
           <form onSubmit={verify} className="space-y-4">
-            <Field label="6-digit code" hint={`Sent by SMS for civil ID ${civilId}`}>
+            <Field label="6-digit code" hint={`Sent by SMS to ${sentTo} · civil ID ${civilId}`}>
               <input className={`${inputCls} text-center text-2xl tracking-[0.5em]`} inputMode="numeric" autoFocus maxLength={6} value={code}
                 onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); setCode(v); }} />
             </Field>
-            {dev && <div className="rounded-lg bg-amber-50 p-2 text-center text-sm text-amber-900">Dev mode code: <b className="tabular">{dev}</b> <button type="button" className="underline" onClick={() => setCode(dev)}>fill</button></div>}
+            {dev && (
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-center text-sm text-amber-900">
+                <div className="text-xs">Demo mode — no SMS is sent. Your code is:</div>
+                <div className="my-1 text-2xl font-bold tracking-[0.3em] tabular">{dev}</div>
+                <button type="button" className="font-medium underline" onClick={() => setCode(dev)}>Fill it in</button>
+              </div>
+            )}
             <Button className="w-full" size="lg" disabled={busy || code.length !== 6}>Verify</Button>
             <div className="flex items-center justify-between text-sm">
-              <button type="button" className="text-stone-500 hover:text-stone-800" onClick={() => { setStep("id"); setCode(""); }}>Change civil ID</button>
+              <button type="button" className="text-stone-500 hover:text-stone-800" onClick={() => { setStep("id"); setCode(""); }}>Change details</button>
               <button type="button" disabled={cooldown > 0 || busy} className="font-medium text-brand-600 disabled:text-stone-400"
                 onClick={async () => {
                   setBusy(true);
-                  try { const res = await api<{ devCode?: string }>("/api/auth/otp", { body: { civilId } }); setDev(res.devCode ?? null); setCode(""); setCooldown(30); toast("A new code has been sent", "info"); } catch {}
+                  try { const res = await api<{ devCode?: string; sentTo: string }>("/api/auth/otp", { body: { civilId, mobile } }); setDev(res.devCode ?? null); setSentTo(res.sentTo); setCode(""); setCooldown(30); toast("A new code has been sent", "info"); } catch {}
                   setBusy(false);
                 }}>
                 {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
@@ -71,7 +88,7 @@ function Login({ demo }: { demo: boolean }) {
             </div>
           </form>
         )}
-        {demo && <p className="rounded-lg bg-sand-100 p-2 text-xs text-stone-600">Demo accounts: admin <b>10000001</b> · judge <b>10000002</b> · reception <b>10000003</b> · shooters <b>20000001</b>–<b>20000040</b></p>}
+        {demo && <p className="rounded-lg bg-sand-100 p-2 text-xs text-stone-600">Demo accounts: admin <b>10000001</b> · judge <b>10000002</b> · reception <b>10000003</b> · shooters <b>20000001</b>–<b>20000040</b> · any mobile number</p>}
       </Card>
     </div>
   );

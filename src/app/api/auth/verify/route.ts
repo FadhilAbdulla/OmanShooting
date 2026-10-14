@@ -31,6 +31,7 @@ export const POST = handle(async (req: Request) => {
     const s = await startSession(user.id);
     return ok({ ok: true, roles: s.roles });
   }
-  (await cookies()).set("reg", await signTemp({ civilId }), { httpOnly: true, sameSite: "lax", path: "/", maxAge: 900 });
+  // The mobile the code was sent to is now verified — carry it into onboarding
+  (await cookies()).set("reg", await signTemp({ civilId, mobile: otp.mobile }), { httpOnly: true, sameSite: "lax", path: "/", maxAge: 900 });
   return ok({ register: true });
 });

@@ -28,7 +28,7 @@ async function cropCircle(file: Blob): Promise<string> {
   return c.toDataURL("image/png");
 }
 
-export function Onboarding({ civilId, next, demo }: { civilId: string; next: string; demo: boolean }) {
+export function Onboarding({ civilId, verifiedMobile, next, demo }: { civilId: string; verifiedMobile: string | null; next: string; demo: boolean }) {
   const r = useRouter();
   const [step, setStep] = useState<Step>("scan");
   const [front, setFront] = useState<Blob | null>(null);
@@ -36,7 +36,7 @@ export function Onboarding({ civilId, next, demo }: { civilId: string; next: str
   const [progress, setProgress] = useState<{ p: number; label: string } | null>(null);
   const [result, setResult] = useState<CardResult | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
-  const [f, setF] = useState({ fullName: "", tribe: "", mobile: "", email: "", gender: "MALE", hand: "RIGHT", dob: "", governorate: "Muscat", wilayat: "", idExpiry: "" });
+  const [f, setF] = useState({ fullName: "", tribe: "", mobile: verifiedMobile ?? "", email: "", gender: "MALE", hand: "RIGHT", dob: "", governorate: "Muscat", wilayat: "", idExpiry: "" });
   const [fromCard, setFromCard] = useState<Set<string>>(new Set());
   const [photo, setPhoto] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -86,7 +86,7 @@ export function Onboarding({ civilId, next, demo }: { civilId: string; next: str
   }
 
   const currentIdx = STEPS.findIndex((s) => s.key === step);
-  const detailsValid = f.fullName.trim().length >= 3 && /^(\+?968)?[279]\d{7}$/.test(f.mobile.replace(/\s/g, "")) && !!f.dob && !!f.governorate;
+  const detailsValid = f.fullName.trim().length >= 3 && (!!verifiedMobile || /^(\+?968)?[79]\d{7}$/.test(f.mobile.replace(/\s/g, ""))) && !!f.dob && !!f.governorate;
 
   return (
     <div className="mx-auto max-w-2xl py-4">
@@ -174,7 +174,7 @@ export function Onboarding({ civilId, next, demo }: { civilId: string; next: str
             <Field label="Tribe (optional)"><input className={inputCls} value={f.tribe} onChange={set("tribe")} /></Field>
             <Field label="Governorate" hint={fromCard.has("governorate") ? "From your ID card" : undefined}><select className={inputCls} value={f.governorate} onChange={set("governorate")}>{GOVERNORATES.map((g) => <option key={g}>{g}</option>)}</select></Field>
             <Field label="Wilayat" hint={fromCard.has("wilayat") ? "From your ID card" : undefined}><input className={inputCls} value={f.wilayat} onChange={set("wilayat")} /></Field>
-            <Field label="Mobile number" hint="For your booking confirmations and sign-in codes"><input className={inputCls} required inputMode="tel" placeholder="9XXXXXXX" value={f.mobile} onChange={set("mobile")} /></Field>
+            <Field label="Mobile number" hint={verifiedMobile ? "✓ Verified with your sign-in code" : "For your booking confirmations and sign-in codes"}><input className={cn(inputCls, verifiedMobile && "bg-sand-100")} required inputMode="tel" placeholder="9XXXXXXX" value={f.mobile} disabled={!!verifiedMobile} onChange={set("mobile")} /></Field>
             <Field label="Email (optional)"><input type="email" className={inputCls} value={f.email} onChange={set("email")} /></Field>
             <Field label="Gender">
               <div className="flex gap-2">{(["MALE", "FEMALE"] as const).map((g) => <button type="button" key={g} onClick={() => setF({ ...f, gender: g })} className={cn("h-10 flex-1 rounded-lg border text-sm", f.gender === g ? "border-brand-500 bg-brand-50 font-medium" : "border-sand-300")}>{g === "MALE" ? "Male" : "Female"}</button>)}</div>

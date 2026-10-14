@@ -14,7 +14,7 @@ npm run db:seed
 npm run dev            # http://localhost:3000
 ```
 
-Sign in with a civil ID. With `DEMO_MODE=1` the one-time code is shown on screen and card payments use a sandbox page; a banner says so on every page. Leave `DEMO_MODE` unset in production once an SMS provider and Thawani keys are configured.
+Sign in with a civil ID and mobile number. Members receive the one-time code on the mobile they registered; new shooters receive it on the number they enter, which becomes their verified mobile. SMS sending is a stub in `src/lib/notify.ts` (codes are printed in the server log) until a provider is connected. With `DEMO_MODE=1` the code is also shown on screen and card payments use a sandbox page; a banner says so on every page. Leave `DEMO_MODE` unset in production once an SMS provider and Thawani keys are configured.
 
 See [AUDIT.md](AUDIT.md) for the latest security and correctness review.
 
@@ -31,7 +31,7 @@ The seed creates a **live** "Ministry Championship 2026" (started yesterday, wit
 
 These journeys are driven end to end through the UI, with clicks and typing only, against a production build:
 
-1. **New shooter onboarding:** *Become a member* → civil ID + one-time code (with *Resend*) → **scan ID card** (camera or upload, both sides at once; the text is read in the browser and the card images are never uploaded; a non-card photo or someone else's card is rejected with a retake prompt) → details pre-filled from the card, plus mobile, gender and dominant hand → circular profile photo → **digital membership card with QR** → *Book your first target*. In demo mode, *Demo: use a sample card* generates a clearly watermarked sample card for the verified civil ID.
+1. **New shooter onboarding:** *Become a member* → civil ID + mobile → one-time code (with *Resend*) → **scan ID card** (camera or upload, both sides at once; the text is read in the browser and the card images are never uploaded; a non-card photo or someone else's card is rejected with a retake prompt) → details pre-filled from the card, plus gender and dominant hand (the mobile is already verified) → circular profile photo → **digital membership card with QR** → *Book your first target*. In demo mode, *Demo: use a sample card* generates a clearly watermarked sample card for the verified civil ID.
 1b. **Returning shooter sign-in** lands on **My bookings**: next booking, payments due, upcoming bookings with change/cancel, competitions open to them, history and the membership card. Staff land on the admin console; a sign-in started from *Choose target* returns to that board.
 2. **Returning shooter, two attempts, bank transfer:** two groups in one cart (tiered price 4.000 + 2.000) → upload receipt → "We're checking your transfer" → admin approves in *Payments* → order shows *Confirmed*, with the same participant number on both.
 3. **Change & cancel:** My account shows *Change target / time* and *Cancel* only inside the policy window (otherwise it explains why) → change mode on the board → atomic move → cancel releases the target.

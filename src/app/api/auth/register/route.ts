@@ -5,11 +5,12 @@ import { handle, ok } from "@/lib/api";
 import { startSession } from "@/lib/auth";
 import { verifyTemp } from "@/lib/session";
 import { AppError, dateOnly, isSafeDataUrl } from "@/lib/utils";
+import { normaliseMobile } from "@/lib/oman";
 
 const Body = z.object({
   fullName: z.string().min(3),
   tribe: z.string().optional(),
-  mobile: z.string().regex(/^(\+?968)?[279]\d{7}$/, "Enter an Omani mobile number"),
+  mobile: z.string().optional(), // ignored when the OTP step already verified a mobile
   email: z.string().email().optional().or(z.literal("")),
   gender: z.enum(["MALE", "FEMALE"]),
   hand: z.enum(["RIGHT", "LEFT"]),
@@ -23,14 +24,16 @@ const Body = z.object({
 
 export const POST = handle(async (req: Request) => {
   const c = await cookies();
-  const tmp = await verifyTemp<{ civilId: string }>(c.get("reg")?.value);
+  const tmp = await verifyTemp<{ civilId: string; mobile?: string | null }>(c.get("reg")?.value);
   if (!tmp) throw new AppError("Verification expired — sign in again", 401);
   const d = Body.parse(await req.json());
   if (d.photo && !isSafeDataUrl(d.photo)) throw new AppError("Photo must be an image");
+  const mobile = tmp.mobile ?? normaliseMobile(d.mobile ?? "");
+  if (!mobile) throw new AppError("Enter an Omani mobile number", 422);
   if (await prisma.user.findUnique({ where: { civilId: tmp.civilId } })) throw new AppError("This civil ID is already registered — please sign in", 409);
   const user = await prisma.user.create({
     data: {
-      civilId: tmp.civilId, fullName: d.fullName, tribe: d.tribe, mobile: d.mobile, email: d.email || null, gender: d.gender,
+      civilId: tmp.civilId, fullName: d.fullName, tribe: d.tribe, mobile, email: d.email || null, gender: d.gender,
       hand: d.hand, dob: dateOnly(d.dob), governorate: d.governorate, wilayat: d.wilayat,
       photo: d.photo ?? null, idExpiry: d.idExpiry ? dateOnly(d.idExpiry) : null, idScanned: !!d.idScanned,
       roles: { create: { role: "SHOOTER" } },

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { getSession, STAFF } from "@/lib/auth";
 import { getDict } from "@/lib/i18n";
 import { LocaleToggle, LogoutButton } from "@/components/nav-client";
@@ -12,9 +13,12 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const staff = s?.roles.some((r) => STAFF.includes(r));
   const ar = locale === "ar";
   // Live holds in the cart, so a shooter always knows they have something waiting to be paid
+  // Between OTP verification and finishing onboarding the visitor has a "reg" cookie but no session yet
+  const onboarding = !s && !!(await cookies()).get("reg")?.value;
   const cartCount = s ? await prisma.slot.count({ where: { userId: s.uid, state: "HELD", holdExpiresAt: { gt: new Date() } } }) : 0;
   return (
-    <>
+    // Full-height column so the footer always sits at the bottom, even on short pages
+    <div className="flex min-h-screen flex-col">
       <DemoBanner />
       <header className="heritage-bg sticky top-0 z-40 border-b border-white/10 text-sand-100 shadow-sm no-print">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
@@ -36,11 +40,13 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             {s && <Link href="/me" className="rounded-md px-3 py-1.5 hover:bg-white/10">{t.my}</Link>}
             {staff && <Link href="/admin" className="rounded-md bg-white/15 px-3 py-1.5 hover:bg-white/20">{t.admin}</Link>}
             <LocaleToggle locale={locale} />
-            {s ? <LogoutButton label={t.logout} /> : <Link href="/login" className="ms-1 rounded-lg bg-brand-500 px-4 py-2 font-medium text-white shadow hover:bg-brand-600">{t.login}</Link>}
+            {s ? <LogoutButton label={t.logout} />
+              : onboarding ? <span className="ms-1 rounded-lg bg-white/10 px-3 py-1.5 text-sand-200">{ar ? "استكمال العضوية" : "Completing membership"}</span>
+              : <Link href="/login" className="ms-1 rounded-lg bg-brand-500 px-4 py-2 font-medium text-white shadow hover:bg-brand-600">{t.login}</Link>}
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
       <footer className="heritage-bg mt-6 text-sand-200 no-print">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2.5 font-semibold text-white"><Logo className="h-8 w-8" />{t.brand}</div>
@@ -52,6 +58,6 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
           <div className="text-xs text-sand-300">© {new Date().getFullYear()} {ar ? "اللجنة العُمانية للرماية" : "Oman Traditional Shooting"}</div>
         </div>
       </footer>
-    </>
+    </div>
   );
 }

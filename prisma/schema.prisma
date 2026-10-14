@@ -128,6 +128,7 @@ model UserRole {
 model OtpCode {
   id         String    @id @default(cuid())
   civilId    String
+  mobile     String? // where the code was sent; for new members this becomes their verified mobile
   codeHash   String // sha256(salt + code) — MEM-05
   salt       String
   expiresAt  DateTime @db.Timestamptz(3)

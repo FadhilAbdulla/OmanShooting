@@ -28,6 +28,12 @@ export function BookingBoard(props: {
   const [busy, setBusy] = useState<string | null>(null);
   const [cart, setCart] = useState<{ items: CartItem[]; total: string }>({ items: [], total: "0" });
   const [jitter] = useState(() => 150 + Math.floor(Math.random() * 250)); // spreads refetches from many viewers
+  // While the sticky cart bar is showing, reserve space under the page so it never covers the footer
+  const cartBarVisible = !moving && cart.items.length > 0;
+  useEffect(() => {
+    document.body.style.paddingBottom = cartBarVisible ? "84px" : "";
+    return () => { document.body.style.paddingBottom = ""; };
+  }, [cartBarVisible]);
 
   const loadFree = useCallback(async () => {
     const r = await api<{ free: Record<string, number> }>(`/api/competitions/${props.competitionId}/availability`, { quiet: true });
@@ -184,7 +190,7 @@ export function BookingBoard(props: {
       )}
 
       {/* Sticky cart */}
-      {!moving && cart.items.length > 0 && (
+      {cartBarVisible && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-sand-200 bg-white/95 backdrop-blur no-print">
           <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
             <div className="min-w-0 flex-1 text-sm">
