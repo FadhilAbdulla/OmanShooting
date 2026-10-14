@@ -29,7 +29,10 @@ export const POST = handle(async (req: Request) => {
   const user = await prisma.user.findUnique({ where: { civilId } });
   const target = user ? normaliseMobile(user.mobile) ?? user.mobile : entered;
 
-  const code = String(randomInt(100000, 999999));
+  // Temporary: FIXED_OTP (e.g. "123456") gives everyone the same code until an SMS provider is connected.
+  // Remove the variable to go back to random codes.
+  const fixed = /^\d{6}$/.test(process.env.FIXED_OTP ?? "") ? process.env.FIXED_OTP! : null;
+  const code = fixed ?? String(randomInt(100000, 999999));
   const salt = randomBytes(16).toString("hex");
   await prisma.otpCode.create({
     data: {
@@ -40,5 +43,5 @@ export const POST = handle(async (req: Request) => {
   });
   await sendSms(target, `Your Oman Traditional Shooting verification code is ${code}. It expires in 10 minutes.`);
 
-  return ok({ sent: true, sentTo: `••••${target.slice(-4)}`, devCode: isDemo() ? code : undefined });
+  return ok({ sent: true, sentTo: `••••${target.slice(-4)}`, devCode: isDemo() || fixed ? code : undefined });
 });
