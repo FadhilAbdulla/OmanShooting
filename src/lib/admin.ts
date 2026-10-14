@@ -55,7 +55,7 @@ function inherit(c: Competition) {
   return {
     eventId: c.eventId, firearm: c.firearm, format: c.format, teamSize: c.teamSize, shotsPerSeries: c.shotsPerSeries,
     seriesCount: c.seriesCount, maxScorePerShot: c.maxScorePerShot, venueType: c.venueType, targetsPerGroup: c.targetsPerGroup,
-    leftHandTargets: c.leftHandTargets, enforceHand: c.enforceHand, prices: c.prices, maxParticipants: c.maxParticipants,
+    leftHandTargets: c.leftHandTargets, enforceHand: c.enforceHand, prices: c.prices, maxAttempts: c.maxAttempts, maxParticipants: c.maxParticipants,
     finalistsCount: c.finalistsCount,
   };
 }

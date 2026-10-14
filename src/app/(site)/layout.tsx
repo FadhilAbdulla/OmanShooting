@@ -42,37 +42,14 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
       <footer className="heritage-bg mt-6 text-sand-200 no-print">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-2.5 font-semibold text-white"><Logo className="h-9 w-9" />{t.brand}</div>
-            <p className="mt-4 max-w-sm text-sm text-sand-300">
-              {ar
-                ? "المنصة الوطنية للجنة العُمانية للرماية بالأسلحة التقليدية — لتنظيم البطولات وتوثيق الموروث للأجيال القادمة."
-                : "The national platform of the Oman Committee for Traditional Shooting with Traditional Weapons — organising championships and preserving our heritage for future generations."}
-            </p>
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-white">{ar ? "روابط" : "Explore"}</div>
-            <ul className="mt-4 space-y-2 text-sm">
-              <li><Link href="/#championships" className="hover:text-white">{t.events}</Link></li>
-              <li><Link href="/login" className="hover:text-white">{ar ? "العضوية" : "Membership"}</Link></li>
-              <li><Link href="/me" className="hover:text-white">{t.my}</Link></li>
-            </ul>
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-white">{ar ? "تواصل معنا" : "Contact"}</div>
-            <ul className="mt-4 space-y-2 text-sm">
-              <li><a href="mailto:omanshooter@mcsy.gov.om" className="hover:text-white">omanshooter@mcsy.gov.om</a></li>
-              <li dir="ltr" className="text-start"><a href="tel:+96892661818" className="hover:text-white">+968 9266 1818</a></li>
-              <li>{ar ? "مسقط، سلطنة عُمان" : "Muscat, Sultanate of Oman"}</li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-white/10">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-sand-300">
-            <span>© {new Date().getFullYear()} {ar ? "اللجنة العُمانية للرماية بالأسلحة التقليدية" : "Oman Committee for Traditional Shooting with Traditional Weapons"}</span>
-            <span>{ar ? "الصور: Unsplash" : "Photography: Unsplash contributors"}</span>
-          </div>
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5 font-semibold text-white"><Logo className="h-8 w-8" />{t.brand}</div>
+          <nav className="flex flex-wrap gap-4 text-sm">
+            <Link href="/#championships" className="hover:text-white">{t.events}</Link>
+            <Link href="/login" className="hover:text-white">{ar ? "العضوية" : "Membership"}</Link>
+            <Link href="/me" className="hover:text-white">{t.my}</Link>
+          </nav>
+          <div className="text-xs text-sand-300">© {new Date().getFullYear()} {ar ? "اللجنة العُمانية للرماية" : "Oman Traditional Shooting"}</div>
         </div>
       </footer>
     </>

@@ -81,7 +81,7 @@ export async function claimSlot(userId: string, slotId: string) {
     if (stale?.orderId) await failOrder(stale.orderId, "EXPIRED", null, "Payment deadline passed");
   }
 
-  const maxAttempts = Math.max(1, comp.prices.length);
+  const maxAttempts = comp.maxAttempts;
   const holdMinutes = comp.event.holdMinutes;
   try {
     const claimed = await prisma.$transaction(async (tx) => {
@@ -92,13 +92,14 @@ export async function claimSlot(userId: string, slotId: string) {
       const existing = await tx.slot.findFirst({ where: { groupId: group.id, userId, state: { in: ["PENDING", "BOOKED"] } } });
       if (existing) throw new AppError(`You already have target ${existing.targetNo} in this group`, 409, "ALREADY_BOOKED");
 
-      // Attempt limit (tiered pricing defines how many attempts are allowed)
+      // Attempt policy is configured independently from tiered pricing. When no maximum is set,
+      // shooters may re-enter and the final configured price tier continues to apply.
       const [activeBookings, otherHolds] = await Promise.all([
         tx.booking.count({ where: { userId, competitionId: comp.id, status: { in: [...ACTIVE] } } }),
         tx.slot.count({ where: { userId, state: "HELD", holdExpiresAt: { gt: new Date() }, groupId: { not: group.id }, group: { competitionId: comp.id } } }),
       ]);
-      if (activeBookings + otherHolds >= maxAttempts) {
-        throw new AppError(`Maximum ${maxAttempts} attempt(s) allowed in this competition`, 409, "MAX_ATTEMPTS");
+      if (maxAttempts != null && activeBookings + otherHolds >= maxAttempts) {
+        throw new AppError(`Maximum ${maxAttempts} ${maxAttempts === 1 ? "attempt" : "attempts"} allowed in this competition`, 409, "MAX_ATTEMPTS");
       }
 
       // Competition-wide cap on distinct shooters (only serialises claims when a cap is configured)
@@ -151,6 +152,7 @@ export async function releaseSlot(userId: string, slotId: string) {
 
 function priceFor(prices: Prisma.Decimal[], attemptNo: number) {
   if (!prices.length) return new Prisma.Decimal(0);
+  // TOUR-03: after the listed tiers, keep charging the final tier unless maxAttempts blocks re-entry.
   return prices[Math.min(attemptNo, prices.length) - 1];
 }
 
@@ -454,6 +456,9 @@ export async function staffAssign(slotId: string, civilId: string, actorId: stri
    RETURNING *`;
     if (!rows.length) throw new AppError("Target is not free", 409, "TAKEN");
     const prior = await tx.booking.count({ where: { userId: user.id, competitionId: comp.id, status: { in: [...ACTIVE] } } });
+    if (comp.maxAttempts != null && prior >= comp.maxAttempts) {
+      throw new AppError(`Maximum ${comp.maxAttempts} ${comp.maxAttempts === 1 ? "attempt" : "attempts"} allowed in this competition`, 409, "MAX_ATTEMPTS");
+    }
     const price = priceFor(comp.prices, prior + 1);
     const order = await tx.order.create({
       data: { ref: ref("ORD"), userId: user.id, total: price, method: price.isZero() ? "FREE" : "CASH", status: "PAID", paidAt: new Date(), reviewedById: actorId, reviewNote: "On-site at check-in", isTest },

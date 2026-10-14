@@ -24,7 +24,8 @@ export const CompBody = z.object({
   shotsPerSeries: z.coerce.number().int().min(1).max(50), seriesCount: z.coerce.number().int().min(1).max(10), maxScorePerShot: z.coerce.number().int().min(1).max(100).default(10),
   venueType: z.enum(["INDOOR_AC", "INDOOR", "OUTDOOR"]), targetsPerGroup: z.coerce.number().int().min(1).max(100),
   leftHandTargets: z.array(z.coerce.number().int()).default([]), enforceHand: z.boolean().default(true),
-  prices: z.array(z.coerce.number().min(0)).min(1).max(10), maxParticipants: z.coerce.number().int().nullable().optional(),
+  prices: z.array(z.coerce.number().min(0)).min(1).max(10),
+  maxAttempts: z.coerce.number().int().min(1).max(100).nullable().optional(),
+  maxParticipants: z.coerce.number().int().nullable().optional(),
   finalistsCount: z.coerce.number().int().min(1).max(50).default(8),
 });
-

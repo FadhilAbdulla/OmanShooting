@@ -16,7 +16,7 @@ export const POST = handle(async (req: Request) => {
   const base = parent
     ? { firearm: parent.firearm, genderRule: parent.genderRule, minAge: parent.minAge, maxAge: parent.maxAge, format: parent.format, teamSize: parent.teamSize,
         shotsPerSeries: parent.shotsPerSeries, seriesCount: parent.seriesCount, venueType: parent.venueType, targetsPerGroup: parent.targetsPerGroup,
-        leftHandTargets: parent.leftHandTargets, enforceHand: parent.enforceHand, prices: parent.prices.map(Number), finalistsCount: parent.finalistsCount,
+        leftHandTargets: parent.leftHandTargets, enforceHand: parent.enforceHand, prices: parent.prices.map(Number), maxAttempts: parent.maxAttempts, finalistsCount: parent.finalistsCount,
         nameEn: `${parent.nameEn} — Sub`, nameAr: `${parent.nameAr} — فرعي` }
     : p
       ? { nameEn: p.nameEn, nameAr: p.nameAr, format: p.format, teamSize: "teamSize" in p ? p.teamSize : null, shotsPerSeries: p.shotsPerSeries,

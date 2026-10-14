@@ -73,7 +73,7 @@ Test 2: 500 shooters → 8 free targets   status counts: { '200': 8, '409': 492 
    - shots per series and number of series
    - venue (indoor A/C / indoor / outdoor) and targets per group
    - left-hand targets (tap to toggle), enforce-hand rule
-   - **price per attempt** (`5, 3` = 1st attempt 5 OMR, 2nd 3 OMR, max 2 attempts), max participants, finalists
+   - **price per attempt** (`5, 3` = 1st attempt 5 OMR, then 3 OMR from the 2nd onward), optional maximum attempts (blank = unlimited), max participants, finalists
 2. **⚡ Age/gender split**: tick genders × age bands and the sub-competitions are created at once, inheriting the parent's settings. "Apply to sub-competitions" pushes later edits down.
 3. **Schedule**: pick competitions and days, set first start, last end, duration and break. A live preview shows the groups; **Generate** creates every group and every target. Re-running skips groups that already exist.
 4. **Draft = test mode**: admins can book the draft from the public site. Those bookings are flagged `isTest`, and **Publish** checks a checklist, wipes the test data and resets all targets automatically.

@@ -199,6 +199,7 @@ model Competition {
   leftHandTargets Int[]         @default([])
   enforceHand     Boolean       @default(true)
   prices          Decimal[]     @default([]) @db.Decimal(10, 3) // price by attempt number (TOUR-03)
+  maxAttempts     Int?          // null = unlimited; attempt policy is independent from price tiers (TOUR-01/03)
   maxParticipants Int?
   finalistsCount  Int           @default(8)
   sortOrder       Int           @default(0)

@@ -10,7 +10,7 @@ type Comp = {
   id: string; parentId: string | null; nameEn: string; nameAr: string; firearm: string; genderRule: "MALE" | "FEMALE" | "ANY";
   minAge: number | null; maxAge: number | null; format: "INDIVIDUAL" | "TEAM"; teamSize: number | null; shotsPerSeries: number;
   seriesCount: number; maxScorePerShot: number; venueType: "INDOOR_AC" | "INDOOR" | "OUTDOOR"; targetsPerGroup: number;
-  leftHandTargets: number[]; enforceHand: boolean; prices: number[]; maxParticipants: number | null; finalistsCount: number;
+  leftHandTargets: number[]; enforceHand: boolean; prices: number[]; maxAttempts: number | null; maxParticipants: number | null; finalistsCount: number;
   _count: { groups: number; bookings: number };
 };
 
@@ -82,6 +82,7 @@ function Row({ c, onEdit, onSub, onMatrix, isRoot, childCount = 0 }: { c: Comp; 
           <Badge className="bg-sand-100 text-sand-700">{c.seriesCount > 1 ? `${c.seriesCount}×` : ""}{c.shotsPerSeries} shots</Badge>
           <Badge className="bg-sand-100 text-sand-700">{c.targetsPerGroup} targets · {V[c.venueType]}</Badge>
           <Badge className="bg-sand-100 text-sand-700">{c.prices.map((p) => p.toFixed(3)).join(" / ")} OMR</Badge>
+          <Badge className="bg-sand-100 text-sand-700">{c.maxAttempts == null ? "Unlimited attempts" : `Max ${c.maxAttempts} attempt${c.maxAttempts === 1 ? "" : "s"}`}</Badge>
           {childCount > 0
             ? <Badge className="bg-sky-100 text-sky-800">{childCount} sub-competitions · groups are scheduled per sub-competition</Badge>
             : <Badge className={c._count.groups ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-700"}>{c._count.groups ? `${c._count.groups} groups` : "No groups yet — open Schedule"}</Badge>}
@@ -169,7 +170,8 @@ function EditForm({ c, hasChildren, onDone }: { c: Comp; hasChildren: boolean; o
           <select className={inputCls} value={f.venueType} onChange={(e) => set("venueType", e.target.value as Comp["venueType"])}><option value="OUTDOOR">Outdoor</option><option value="INDOOR_AC">Indoor · air-conditioned</option><option value="INDOOR">Indoor · no A/C</option></select>
         </Field>
         <Field label="Shooters per group (targets)"><input type="number" className={inputCls} value={f.targetsPerGroup} onChange={num("targetsPerGroup")} /></Field>
-        <Field label="Price by attempt (OMR)" hint="1st, 2nd, … attempt — count = max attempts"><input className={inputCls} value={f.pricesText} onChange={(e) => set("pricesText", e.target.value)} placeholder="5, 3" /></Field>
+        <Field label="Price by attempt (OMR)" hint="1st, 2nd, …; the final price repeats for later attempts"><input className={inputCls} value={f.pricesText} onChange={(e) => set("pricesText", e.target.value)} placeholder="5, 3" /></Field>
+        <Field label="Max attempts" hint="Blank = unlimited"><input type="number" min="1" className={inputCls} value={f.maxAttempts ?? ""} onChange={num("maxAttempts")} placeholder="Unlimited" /></Field>
         <Field label="Max participants (total)" hint="Blank = limited only by targets"><input type="number" className={inputCls} value={f.maxParticipants ?? ""} onChange={num("maxParticipants")} /></Field>
         <Field label="Finalists"><input type="number" className={inputCls} value={f.finalistsCount} onChange={num("finalistsCount")} /></Field>
       </div>
@@ -186,7 +188,7 @@ function EditForm({ c, hasChildren, onDone }: { c: Comp; hasChildren: boolean; o
       </div>
       <div className="flex items-center gap-3">
         <Button disabled={busy}>Save</Button>
-        {hasChildren && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={applyChildren} onChange={(e) => setApplyChildren(e.target.checked)} /> Also apply format, shots, targets, venue & prices to all sub-competitions</label>}
+        {hasChildren && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={applyChildren} onChange={(e) => setApplyChildren(e.target.checked)} /> Also apply format, shots, targets, venue, prices & attempt limit to all sub-competitions</label>}
         <Button type="button" variant="ghost" onClick={onDone}>Close</Button>
       </div>
     </form>
