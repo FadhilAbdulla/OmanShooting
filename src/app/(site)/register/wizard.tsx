@@ -28,7 +28,7 @@ async function cropCircle(file: Blob): Promise<string> {
   return c.toDataURL("image/png");
 }
 
-export function Onboarding({ civilId, verifiedMobile, next }: { civilId: string; verifiedMobile: string | null; next: string; demo: boolean }) {
+export function Onboarding({ civilId, verifiedMobile, next, demo }: { civilId: string; verifiedMobile: string | null; next: string; demo: boolean }) {
   const r = useRouter();
   const [step, setStep] = useState<Step>("scan");
   const [idVerified, setIdVerified] = useState(false);
@@ -37,6 +37,22 @@ export function Onboarding({ civilId, verifiedMobile, next }: { civilId: string;
   const [photo, setPhoto] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
+
+  function fillDemoDetails() {
+    setF((current) => ({
+      ...current,
+      fullName: "Khalid Al-Rashdi",
+      tribe: "Al-Rashdi",
+      mobile: verifiedMobile ?? "91234567",
+      email: "demo.shooter@example.com",
+      gender: "MALE",
+      hand: "RIGHT",
+      dob: "1995-05-14",
+      governorate: "Muscat",
+      wilayat: "Bawshar",
+      idExpiry: "2030-12-31",
+    }));
+  }
 
   async function submit() {
     setBusy(true);
@@ -82,9 +98,12 @@ export function Onboarding({ civilId, verifiedMobile, next }: { civilId: string;
 
       {step === "details" && (
         <Card className="space-y-5 p-6">
-          <div>
-            <h1 className="text-xl font-bold">Your details</h1>
-            <p className="text-sm text-stone-600">{fromCard.size ? "We filled in what we could read from your card — check it, then add the rest." : "Fill in your details as they appear on your ID card."}</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-bold">Your details</h1>
+              <p className="text-sm text-stone-600">{fromCard.size ? "We filled in what we could read from your card — check it, then add the rest." : "Fill in your details as they appear on your ID card."}</p>
+            </div>
+            {demo && <Button type="button" size="sm" variant="secondary" onClick={fillDemoDetails}>Fill demo details</Button>}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Full name" className="sm:col-span-2" hint={fromCard.has("fullName") ? "From your ID card" : undefined}><input className={inputCls} required value={f.fullName} onChange={set("fullName")} /></Field>
