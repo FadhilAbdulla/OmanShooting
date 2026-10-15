@@ -21,9 +21,9 @@ export function Toaster() {
     return () => void listeners.delete(l);
   }, []);
   return (
-    <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] inset-x-0 z-50 md:bottom-4 flex flex-col items-center gap-2 pointer-events-none px-4 no-print">
+    <div aria-live="polite" className="pointer-events-none fixed inset-x-0 top-[calc(4.5rem+env(safe-area-inset-top))] z-50 flex flex-col items-center gap-2 px-4 no-print md:bottom-4 md:top-auto">
       {items.map((t) => (
-        <div key={t.id} className={`pointer-events-auto rounded-lg px-4 py-3 text-sm shadow-lg max-w-md w-full ${t.kind === "err" ? "bg-rose-700 text-white" : t.kind === "info" ? "bg-stone-800 text-white" : "bg-oasis-600 text-white"}`}>
+        <div key={t.id} className={`pointer-events-auto w-full max-w-md rounded-lg px-4 py-2.5 text-sm shadow-lg ${t.kind === "err" ? "bg-rose-700 text-white" : t.kind === "info" ? "bg-stone-800 text-white" : "bg-oasis-600 text-white"}`}>
           {t.msg}
         </div>
       ))}

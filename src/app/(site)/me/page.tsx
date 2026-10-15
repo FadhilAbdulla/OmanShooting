@@ -78,18 +78,20 @@ export default async function MyBookings({ searchParams }: { searchParams: Promi
 
         {/* Next up */}
         {nextUp && (
-          <div className="heritage-bg flex flex-wrap items-center gap-5 rounded-2xl p-5 text-white">
-            <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-xl bg-white text-brand-700">
+          <div className="heritage-bg grid grid-cols-[4rem_minmax(0,1fr)] items-center gap-3 rounded-2xl p-4 text-white sm:grid-cols-[5rem_minmax(0,1fr)] sm:gap-5 sm:p-5 lg:grid-cols-[5rem_minmax(0,1fr)_auto]">
+            <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl bg-white text-brand-700 sm:h-20 sm:w-20">
               <span className="text-[10px] font-semibold uppercase tracking-wide">Target</span>
-              <span className="text-4xl font-black leading-none tabular">{nextUp.targetNo}</span>
+              <span className="text-3xl font-black leading-none tabular sm:text-4xl">{nextUp.targetNo}</span>
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-xs font-semibold uppercase tracking-widest text-sand-300">Next up {hoursToNext != null && hoursToNext < 48 ? `· in ${hoursToNext < 1 ? "under an hour" : `${Math.round(hoursToNext)} hours`}` : ""}</div>
-              <div className="mt-1 text-xl font-bold">{nextUp.competition.nameEn}</div>
-              <div className="text-sm text-sand-200">{fmtDate(nextUp.group.startsAt)} · {fmtTime(nextUp.group.startsAt)} · Group {nextUp.group.label}{nextUp.participantNo ? ` · Participant #${nextUp.participantNo}` : ""}</div>
-              <div className="text-sm text-sand-300">{nextUp.competition.event.location}</div>
+              <div className="mt-1 break-words text-lg font-bold leading-tight sm:text-xl">{nextUp.competition.nameEn}</div>
+              <div className="mt-1 text-sm leading-relaxed text-sand-200">{fmtDate(nextUp.group.startsAt)} · {fmtTime(nextUp.group.startsAt)} · Group {nextUp.group.label}{nextUp.participantNo ? ` · Participant #${nextUp.participantNo}` : ""}</div>
+              <div className="text-sm leading-relaxed text-sand-300">{nextUp.competition.event.location}</div>
             </div>
-            <div className="text-sm text-sand-200">Arrive 30 min early and<br />show your QR at check-in</div>
+            <div className="col-span-2 border-t border-white/20 pt-3 text-xs leading-relaxed text-sand-200 lg:col-span-1 lg:border-0 lg:pt-0 lg:text-sm">
+              Arrive 30 min early and show your QR at check-in
+            </div>
           </div>
         )}
 
@@ -146,13 +148,15 @@ export default async function MyBookings({ searchParams }: { searchParams: Promi
           ) : (
             <Card className="divide-y divide-sand-100">
               {bookable.slice(0, 8).map(({ e, c, free }) => (
-                <div key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <div key={c.id} className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium">{c.nameEn}</div>
-                    <div className="text-xs text-stone-500">{e.nameEn} · {genderLabel[c.genderRule]} · {ageLabel(c)} · from {omr(c.prices[0] ?? 0)}</div>
+                    <div className="break-words font-medium">{c.nameEn}</div>
+                    <div className="mt-0.5 text-xs leading-relaxed text-stone-500">{e.nameEn} · {genderLabel[c.genderRule]} · {ageLabel(c)} · from {omr(c.prices[0] ?? 0)}</div>
                   </div>
-                  <span className="text-sm text-stone-600 tabular">{free} places left</span>
-                  <LinkButton href={`/events/${e.slug}/book?c=${c.id}`} size="sm">Book</LinkButton>
+                  <div className="flex items-center justify-between gap-3 sm:contents">
+                    <span className="text-sm text-stone-600 tabular">{free} places left</span>
+                    <LinkButton href={`/events/${e.slug}/book?c=${c.id}`} size="sm">Book</LinkButton>
+                  </div>
                 </div>
               ))}
             </Card>

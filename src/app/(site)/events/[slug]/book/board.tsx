@@ -106,7 +106,7 @@ export function BookingBoard(props: {
     setSlots((x) => x.map((y) => (y.id === s.id ? { ...y, state: "HELD", mine: true } : y.mine && y.state === "HELD" ? { ...y, state: "FREE", mine: false } : y)));
     try {
       await api(`/api/slots/${s.id}/hold`, { method: "POST", quiet: true });
-      toast(`Target ${s.targetNo} held for you — complete payment within the timer`, "ok");
+      toast(`Target ${s.targetNo} held — checkout before the timer ends`, "ok");
     } catch (e) {
       const err = e as ApiError;
       toast(err.message, "err");
