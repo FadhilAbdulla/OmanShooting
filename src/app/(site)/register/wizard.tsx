@@ -54,6 +54,15 @@ export function Onboarding({ civilId, verifiedMobile, next, demo }: { civilId: s
     }));
   }
 
+  async function cancelSignup() {
+    setBusy(true);
+    try {
+      await api("/api/auth/cancel-registration", { method: "POST" });
+      r.push("/");
+      r.refresh();
+    } catch { setBusy(false); }
+  }
+
   async function submit() {
     setBusy(true);
     try {
@@ -68,6 +77,11 @@ export function Onboarding({ civilId, verifiedMobile, next, demo }: { civilId: s
 
   return (
     <div className="mx-auto max-w-2xl py-4">
+      <div className="mb-2 flex justify-end">
+        <button type="button" disabled={busy} onClick={cancelSignup} className="text-[11px] text-stone-400 underline-offset-2 hover:text-stone-700 hover:underline disabled:opacity-50">
+          Cancel signup
+        </button>
+      </div>
       {/* Progress */}
       <ol className="mb-6 flex items-center gap-1 text-xs">
         {STEPS.map((s, i) => (
