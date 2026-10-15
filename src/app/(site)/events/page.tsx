@@ -33,12 +33,10 @@ export default async function Events() {
 
   return (
     <section className="py-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-brand-700">{c.champKicker}</div>
-          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{c.champTitle}</h1>
-        </div>
-        <p className="max-w-xl text-sm text-stone-600">{c.champSub}</p>
+      <div className="max-w-2xl">
+        <div className="text-sm font-semibold text-brand-700">{c.champKicker}</div>
+        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{c.champTitle}</h1>
+        <p className="mt-2 text-stone-600">{c.champSub}</p>
       </div>
 
       {!events.length ? (

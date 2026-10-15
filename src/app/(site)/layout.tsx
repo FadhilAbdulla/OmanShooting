@@ -81,7 +81,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
       <BottomNav tabs={tabs} more={more} locale={locale} />
       <footer className="heritage-bg mt-6 hidden text-sand-200 no-print md:block">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:gap-10">
           <div className="flex items-center gap-2.5 font-semibold text-white"><Logo className="h-8 w-8" />{t.brand}</div>
           <nav className="flex flex-wrap gap-4 text-sm">
             <Link href="/events" className="hover:text-white">{t.events}</Link>
@@ -89,12 +89,14 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
             <Link href="/me" className="hover:text-white">{t.my}</Link>
             <Link href="/staff/login" className="hover:text-white">{ar ? "دخول الموظفين" : "Staff sign-in"}</Link>
           </nav>
-          <div className="text-xs text-sand-300">© {new Date().getFullYear()} {ar ? "اللجنة العُمانية للرماية" : "Oman Traditional Shooting"}</div>
         </div>
         <div className="border-t border-white/10">
           <nav className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-2 px-4 py-4 text-sm text-sand-300" aria-label={ar ? "معلومات" : "Information"}>
             {INFO_PAGES.map((p) => <Link key={p.href} href={p.href} className="hover:text-white">{ar ? p.label.ar : p.label.en}</Link>)}
           </nav>
+        </div>
+        <div className="border-t border-white/10 py-4 text-center text-xs text-sand-300">
+          © {new Date().getFullYear()} {ar ? "اللجنة العُمانية للرماية" : "Oman Traditional Shooting"}
         </div>
       </footer>
     </div>
