@@ -81,7 +81,7 @@ async function main() {
   ]);
 
   for (const s of STAFF) {
-    await prisma.user.create({ data: { civilId: s.civilId, fullName: s.fullName, mobile: "99444419", gender: "MALE", hand: "RIGHT", dob: new Date("1985-01-01"), governorate: "Muscat", roles: { create: [{ role: s.role }, { role: "SHOOTER" }] } } });
+    await prisma.user.create({ data: { civilId: s.civilId, fullName: s.fullName, mobile: "99444419", gender: "MALE", hand: "RIGHT", dob: new Date("1985-01-01"), governorate: "Muscat", roles: { create: { role: s.role } } } });
   }
   await ensureDemoStaffLogins();
   const shooters: Awaited<ReturnType<typeof prisma.user.create>>[] = [];

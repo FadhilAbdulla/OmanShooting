@@ -1,21 +1,30 @@
 import { prisma } from "@/lib/db";
-import { requirePageRole } from "@/lib/auth";
-import { Badge, Card } from "@/components/ui";
-import { RoleToggle } from "./role-toggle";
+import { requirePageRole, STAFF } from "@/lib/auth";
+import { Card, Empty } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function Users({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await requirePageRole(["ADMIN"]);
   const q = (await searchParams).q?.trim();
+  const shooterOnly = {
+    roles: {
+      some: { role: "SHOOTER" as const },
+      none: { role: { in: STAFF as never[] } },
+    },
+  };
   const users = await prisma.user.findMany({
-    where: q ? { OR: [{ fullName: { contains: q, mode: "insensitive" } }, { civilId: { contains: q } }, { mobile: { contains: q } }] } : {},
-    include: { roles: true, _count: { select: { bookings: true } } }, orderBy: { createdAt: "desc" }, take: 200,
+    where: q ? { ...shooterOnly, OR: [{ fullName: { contains: q, mode: "insensitive" } }, { civilId: { contains: q } }, { mobile: { contains: q } }] } : shooterOnly,
+    include: { _count: { select: { bookings: true } } }, orderBy: { createdAt: "desc" }, take: 200,
   });
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Members & roles</h1>
-      <form><input name="q" defaultValue={q} placeholder="Search name, civil ID or mobile…" className="h-10 w-full max-w-md rounded-lg border border-sand-300 px-3 text-sm" /></form>
+      <div>
+        <h1 className="text-2xl font-bold">Shooters</h1>
+        <p className="mt-1 text-sm text-stone-600">Registered shooting members only. Staff accounts are managed separately under Staff logins.</p>
+      </div>
+      <form><input name="q" defaultValue={q} placeholder="Search shooter name, civil ID or mobile…" className="h-10 w-full max-w-md rounded-lg border border-sand-300 px-3 text-sm" /></form>
+      {!users.length && <Empty>{q ? "No shooters match your search." : "No shooters registered yet."}</Empty>}
       {/* Phones: one card per member */}
       <div className="space-y-2 md:hidden">
         {users.map((u) => (
@@ -28,13 +37,12 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
               </div>
               <span className="shrink-0 text-xs text-stone-500">{u._count.bookings} bookings</span>
             </div>
-            <div className="mt-3 flex flex-wrap gap-1">{(["ADMIN", "JUDGE", "RECEPTION"] as const).map((r) => <RoleToggle key={r} userId={u.id} role={r} has={u.roles.some((x) => x.role === r)} />)}</div>
           </Card>
         ))}
       </div>
       <Card className="hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
-          <thead className="bg-sand-100/60 text-xs uppercase text-stone-500"><tr><th className="p-2 text-start">Member</th><th className="p-2 text-start">Civil ID</th><th className="p-2">Gender / hand</th><th className="p-2 text-start">Governorate</th><th className="p-2">Bookings</th><th className="p-2 text-start">Roles</th></tr></thead>
+          <thead className="bg-sand-100/60 text-xs uppercase text-stone-500"><tr><th className="p-2 text-start">Shooter</th><th className="p-2 text-start">Civil ID</th><th className="p-2">Gender / hand</th><th className="p-2 text-start">Governorate</th><th className="p-2">Bookings</th></tr></thead>
           <tbody className="divide-y divide-sand-100">
             {users.map((u) => (
               <tr key={u.id}>
@@ -43,7 +51,6 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
                 <td className="p-2 text-center text-xs">{u.gender === "MALE" ? "M" : "F"} · {u.hand === "LEFT" ? "Left" : "Right"}</td>
                 <td className="p-2 text-xs">{u.governorate}</td>
                 <td className="p-2 text-center tabular">{u._count.bookings}</td>
-                <td className="p-2"><div className="flex flex-wrap gap-1">{(["ADMIN", "JUDGE", "RECEPTION"] as const).map((r) => <RoleToggle key={r} userId={u.id} role={r} has={u.roles.some((x) => x.role === r)} />)}{u.roles.some((x) => x.role === "SHOOTER") && <Badge className="bg-sand-100">SHOOTER</Badge>}</div></td>
               </tr>
             ))}
           </tbody>

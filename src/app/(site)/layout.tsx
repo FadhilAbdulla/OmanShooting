@@ -4,7 +4,6 @@ import { getSession, STAFF } from "@/lib/auth";
 import { getDict } from "@/lib/i18n";
 import { LocaleToggle, LogoutButton } from "@/components/nav-client";
 import { Logo } from "@/components/logo";
-import { DemoBanner } from "@/components/demo-banner";
 import { BottomNav, type SheetItem, type Tab } from "@/components/bottom-nav";
 import { prisma } from "@/lib/db";
 import { INFO_PAGES } from "@/lib/site-content";
@@ -47,7 +46,6 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   return (
     // Full-height column so the footer always sits at the bottom, even on short pages
     <div className="flex min-h-screen flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
-      <DemoBanner />
       <header className="heritage-bg sticky top-0 z-40 border-b border-white/10 text-sand-100 shadow-sm no-print">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           <Link href="/" className="flex items-center gap-2.5 font-semibold">

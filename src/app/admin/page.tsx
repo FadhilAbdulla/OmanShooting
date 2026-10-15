@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, STAFF } from "@/lib/auth";
 import { Badge, Card, LinkButton } from "@/components/ui";
 import { Icon } from "@/components/bottom-nav";
 import { VENUE, VenueLegend } from "@/components/venue";
@@ -46,7 +46,7 @@ export default async function Dashboard() {
   const today = { startsAt: { gte: startOfDay, lt: endOfDay } };
 
   const [members, confirmed, revenue, pending, drafts, events, todayGroups, expected, present] = await Promise.all([
-    prisma.user.count({ where: { roles: { some: { role: "SHOOTER" } } } }),
+    prisma.user.count({ where: { roles: { some: { role: "SHOOTER" }, none: { role: { in: STAFF as never[] } } } } }),
     prisma.booking.count({ where: { status: "CONFIRMED", isTest: false } }),
     prisma.order.aggregate({ where: { status: "PAID", isTest: false }, _sum: { total: true } }),
     prisma.order.count({ where: { status: { in: ["PENDING_CASH", "PENDING_REVIEW"] } } }),

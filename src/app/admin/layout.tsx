@@ -3,7 +3,6 @@ import { requirePageRole, STAFF } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Logo } from "@/components/logo";
 import { LogoutButton } from "@/components/nav-client";
-import { DemoBanner } from "@/components/demo-banner";
 import { BottomNav, Icon, type SheetItem, type Tab } from "@/components/bottom-nav";
 import { AdminNav, type NavSection } from "./nav";
 
@@ -26,7 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { title: "Manage", items: [
       { href: "/admin/events", label: "Events & competitions", short: "Events", icon: "target", roles: ["ADMIN"] },
       { href: "/admin/payments", label: "Payments", short: "Payments", icon: "card", roles: ["ADMIN", "RECEPTION"], badge: pending },
-      { href: "/admin/users", label: "Members & roles", short: "Members", icon: "users", roles: ["ADMIN"] },
+      { href: "/admin/users", label: "Shooters", short: "Shooters", icon: "users", roles: ["ADMIN"] },
       { href: "/admin/messages", label: "Contact messages", short: "Messages", icon: "list", roles: ["ADMIN", "RECEPTION"] },
     ] },
     { title: "System", items: [
@@ -87,7 +86,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </aside>
       <div className="lg:ps-64">
-        <DemoBanner />
         <main className="mx-auto min-w-0 max-w-7xl p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
       <BottomNav tabs={tabs} more={more} wide logoutTo="/staff/login" />

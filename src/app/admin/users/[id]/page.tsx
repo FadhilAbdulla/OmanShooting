@@ -13,7 +13,7 @@ export default async function MemberProfile({ params }: { params: Promise<{ id: 
   if (!p) notFound();
   return (
     <div className="space-y-3">
-      <Link href="/admin/users" className="text-sm text-stone-500 hover:underline">← Members</Link>
+      <Link href="/admin/users" className="text-sm text-stone-500 hover:underline">← Shooters</Link>
       <ShooterProfile p={p} staffView />
     </div>
   );
