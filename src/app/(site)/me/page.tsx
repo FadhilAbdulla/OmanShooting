@@ -71,7 +71,7 @@ export default async function MyBookings({ searchParams }: { searchParams: Promi
             <p className="text-sm text-stone-500">Welcome back, {firstName}</p>
             <h1 className="text-2xl font-bold">My bookings</h1>
           </div>
-          <LinkButton href="/#championships">+ Book a target</LinkButton>
+          <LinkButton href="/events">+ Book a target</LinkButton>
         </div>
 
         {moved && <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">✓ Your booking was changed. The new target is shown below.</div>}

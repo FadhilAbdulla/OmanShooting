@@ -4,8 +4,8 @@ import { dateOnly, muscatDateTime } from "./utils";
 export const EventBody = z.object({
   nameEn: z.string().min(3), nameAr: z.string().min(2), descriptionEn: z.string().optional().nullable(), descriptionAr: z.string().optional().nullable(),
   location: z.string().min(2), startDate: z.string(), endDate: z.string(), regOpensAt: z.string(), regClosesAt: z.string(),
-  holdMinutes: z.coerce.number().int().min(2).max(60).default(10), cancelHours: z.coerce.number().int().min(0).default(48),
-  maxCancellations: z.coerce.number().int().min(0).default(2), paymentDeadlineHours: z.coerce.number().int().min(1).default(24),
+  holdMinutes: z.coerce.number().int().min(2).max(60).default(10), cancelHours: z.coerce.number().int().min(0).max(720).default(48),
+  maxCancellations: z.coerce.number().int().min(0).max(50).default(2), paymentDeadlineHours: z.coerce.number().int().min(1).default(24),
   allowCash: z.boolean().default(true), allowTransfer: z.boolean().default(true),
 });
 

@@ -8,20 +8,30 @@ import { Countdown } from "@/components/countdown";
 import { Button, Card } from "@/components/ui";
 import { toast } from "@/components/toast";
 import { cn, fmtDate, fmtTime } from "@/lib/utils";
+import type { VenueType } from "@prisma/client";
+import { Places, VENUE, VenueBadge } from "@/components/venue";
 
-type G = { id: string; label: string; date: string; startsAt: string; endsAt: string };
+type G = { id: string; label: string; date: string; startsAt: string; endsAt: string; targets: number };
 type S = { id: string; targetNo: number; isLeftHand: boolean; state: string; mine: boolean; holdExpiresAt: string | null };
 type CartItem = { slotId: string; targetNo: number; groupLabel: string; startsAt: string; holdExpiresAt: string; price: string; competition: string };
 
 export function BookingBoard(props: {
-  competitionId: string; groups: G[]; enforceHand: boolean; userHand: "LEFT" | "RIGHT"; venue: string; locale: string;
+  competitionId: string; groups: G[]; enforceHand: boolean; userHand: "LEFT" | "RIGHT"; venueType: VenueType; locale: string; leftTargets: number;
   labels: { free: string; held: string; booked: string; left: string; mine: string; remaining: string };
   moving?: { id: string; targetNo: number; groupId: string; label: string; startsAt: string } | null;
 }) {
   const { groups, labels, locale, moving } = props;
   const router = useRouter();
   const dates = useMemo(() => [...new Set(groups.map((g) => g.date))], [groups]);
-  const [free, setFree] = useState<Record<string, number>>({});
+  const [freeAll, setFreeAll] = useState<{ free: Record<string, number>; freeLeft: Record<string, number> }>({ free: {}, freeLeft: {} });
+  // Smart filtering: when hands are enforced, only targets matching the shooter's dominant hand count as places
+  const lefty = props.userHand === "LEFT";
+  const placesFor = (f: typeof freeAll, id: string) => {
+    const all = f.free[id] ?? 0, left = f.freeLeft[id] ?? 0;
+    return !props.enforceHand ? all : lefty ? left : all - left;
+  };
+  const free = useMemo(() => Object.fromEntries(groups.map((g) => [g.id, placesFor(freeAll, g.id)])), [freeAll, groups]); // eslint-disable-line react-hooks/exhaustive-deps
+  const suitable = (g: G) => (!props.enforceHand ? g.targets : lefty ? props.leftTargets : g.targets - props.leftTargets);
   const [date, setDate] = useState<string | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [slots, setSlots] = useState<S[]>([]);
@@ -36,10 +46,11 @@ export function BookingBoard(props: {
   }, [cartBarVisible]);
 
   const loadFree = useCallback(async () => {
-    const r = await api<{ free: Record<string, number> }>(`/api/competitions/${props.competitionId}/availability`, { quiet: true });
-    setFree(r.free);
-    return r.free;
-  }, [props.competitionId]);
+    const r = await api<{ free: Record<string, number>; freeLeft?: Record<string, number> }>(`/api/competitions/${props.competitionId}/availability`, { quiet: true });
+    const next = { free: r.free, freeLeft: r.freeLeft ?? {} };
+    setFreeAll(next);
+    return Object.fromEntries(groups.map((g) => [g.id, placesFor(next, g.id)]));
+  }, [props.competitionId]); // eslint-disable-line react-hooks/exhaustive-deps -- groups and hand are fixed for the page
   const loadBoard = useCallback(async (id: string) => setSlots((await api<{ slots: S[] }>(`/api/groups/${id}/board`, { quiet: true })).slots), []);
   const loadCart = useCallback(async () => {
     setCart(await api(`/api/cart`, { quiet: true }));
@@ -120,6 +131,14 @@ export function BookingBoard(props: {
           <Link href="/me" className="font-medium underline">Keep current booking</Link>
         </div>
       )}
+      {props.enforceHand && (
+        <div className="flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+          <span aria-hidden>✋</span>
+          <span>{lefty
+            ? <>You shoot <b>left-handed</b>: places shown are on the {props.leftTargets} left-hand (L) targets in each group.</>
+            : <>You shoot <b>right-handed</b>: places shown exclude the {props.leftTargets} left-hand (L) targets reserved in each group.</>}</span>
+        </div>
+      )}
       {/* Dates */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {dates.map((d) => {
@@ -140,10 +159,11 @@ export function BookingBoard(props: {
           const left = free[g.id] ?? 0;
           return (
             <button key={g.id} onClick={() => setGroupId(g.id)} disabled={!left && g.id !== groupId}
-              className={cn("rounded-lg border p-3 text-start transition disabled:opacity-40", g.id === groupId ? "border-brand-500 bg-brand-50 ring-2 ring-brand-500/20" : "border-sand-200 bg-white hover:bg-sand-100")}>
-              <div className="flex items-center justify-between"><span className="font-semibold">{g.label}</span><span className="text-xs text-stone-500">{props.venue}</span></div>
-              <div className="text-sm tabular">{fmtTime(g.startsAt, locale)}–{fmtTime(g.endsAt, locale)}</div>
-              <div className={cn("text-xs tabular", left ? "text-oasis-600" : "text-rose-600")}>{left ? `${left} ${labels.remaining}` : "Full"}</div>
+              className={cn("rounded-lg border border-s-4 p-3 text-start transition disabled:opacity-40", VENUE[props.venueType].accent,
+                g.id === groupId ? "border-brand-500 bg-brand-50 ring-2 ring-brand-500/20" : "border-sand-200 bg-white hover:bg-sand-100")}>
+              <div className="flex items-center justify-between gap-2"><span className="font-semibold">{g.label}</span><VenueBadge type={props.venueType} short className="px-1.5 text-[10px]" /></div>
+              <div className="mt-0.5 text-sm tabular">{fmtTime(g.startsAt, locale)}–{fmtTime(g.endsAt, locale)}</div>
+              <Places left={left} total={suitable(g)} className="mt-2" />
             </button>
           );
         })}
@@ -191,7 +211,7 @@ export function BookingBoard(props: {
 
       {/* Sticky cart */}
       {cartBarVisible && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-sand-200 bg-white/95 backdrop-blur no-print">
+        <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 border-t border-sand-200 bg-white/95 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur no-print md:bottom-0">
           <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
             <div className="min-w-0 flex-1 text-sm">
               <div className="font-semibold">{cart.items.length} target(s) · {Number(cart.total).toFixed(3)} OMR</div>

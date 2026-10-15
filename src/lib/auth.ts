@@ -32,7 +32,9 @@ export function hasRole(s: SessionPayload | null, roles: string[]) {
 /** For pages: redirect when unauthorised. Roles come from the DB so a revoked role takes effect immediately. */
 export async function requirePageRole(roles: string[] | null, next = "/") {
   const s = await getSession();
-  if (!s) redirect(`/login?next=${encodeURIComponent(next)}`);
+  // Staff-only pages send visitors to the separate staff portal; everything else to the shooter sign-in
+  const staffOnly = !!roles && roles.every((r) => STAFF.includes(r));
+  if (!s) redirect(`${staffOnly ? "/staff/login" : "/login"}?next=${encodeURIComponent(next)}`);
   const live = (await prisma.userRole.findMany({ where: { userId: s.uid }, select: { role: true } })).map((r) => r.role as string);
   if (roles && !live.some((r) => roles.includes(r))) redirect("/");
   return { ...s, roles: live };

@@ -5,6 +5,7 @@ import { Badge, Card, LinkButton } from "@/components/ui";
 import { Countdown } from "@/components/countdown";
 import { checkoutUrl } from "@/lib/payments/thawani";
 import { fmtDateTime, omr } from "@/lib/utils";
+import { invoiceLabel } from "@/lib/invoice";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +94,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         <div className="flex justify-between p-4 font-semibold"><span>{METHOD_LABEL[order.method]}</span><span className="tabular">{omr(order.total)}</span></div>
       </Card>
       <div className="flex flex-wrap gap-2">
+        {order.invoiceNo != null && <LinkButton href={`/invoice/${order.id}`}>Download invoice {invoiceLabel(order.invoiceNo)}</LinkButton>}
         <LinkButton href="/me" variant="secondary">{order.status === "PAID" ? "My bookings & QR card" : "My bookings"}</LinkButton>
         {ev && <LinkButton href={`/events/${ev.slug}`} variant="ghost">{["EXPIRED", "REJECTED", "CANCELLED"].includes(order.status) ? "Book again" : "Back to championship"}</LinkButton>}
       </div>

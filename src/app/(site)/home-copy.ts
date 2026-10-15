@@ -1,7 +1,7 @@
 import type { Badge } from "@/lib/events";
 
 export type HomeCopy = {
-  heroAlt: string; eyebrow: string; heroTitle: string; heroSub: string; ctaBrowse: string; ctaJoin: string; trust: string[];
+  heroAlt: string; shooterAlt: string; eyebrow: string; heroTitle: string; heroSub: string; ctaBrowse: string; ctaJoin: string; trust: string[];
   nextUp: string; dates: string; location: string; competitions: string; placesLeft: string; chooseTarget: string; badge: Record<Badge, string>;
   stats: { members: string; championships: string; entries: string; governorates: string };
   champKicker: string; champTitle: string; champSub: string; noEvents: string; bookNow: string; viewDetails: string;
@@ -15,10 +15,11 @@ export type HomeCopy = {
 export const HOME: Record<"en" | "ar", HomeCopy> = {
   en: {
     heroAlt: "Historic Omani fort with the national flag",
+    shooterAlt: "Marksman taking aim at sunset",
     eyebrow: "Official platform of the Oman Committee for Traditional Shooting",
     heroTitle: "Where Omani marksmanship heritage meets the future",
     heroSub: "Register with your civil ID, choose your exact target on a live board, pay securely and follow every score as it happens — across every championship in the Sultanate.",
-    ctaBrowse: "Browse championships", ctaJoin: "Become a member",
+    ctaBrowse: "Browse Championships", ctaJoin: "Become a member",
     trust: ["Civil-ID sign-in, no passwords", "Secure online payment", "Live results & rankings"],
     nextUp: "Next championship", dates: "Starts", location: "Location", competitions: "competitions", placesLeft: "places left", chooseTarget: "Choose your target",
     badge: { DRAFT: "Draft", COMING_SOON: "Coming soon", OPEN: "Registration open", CLOSED: "Closed" },
@@ -64,6 +65,7 @@ export const HOME: Record<"en" | "ar", HomeCopy> = {
   },
   ar: {
     heroAlt: "قلعة عُمانية تاريخية يرفرف فوقها العلم الوطني",
+    shooterAlt: "رامٍ يصوّب عند الغروب",
     eyebrow: "المنصة الرسمية للجنة العُمانية للرماية التقليدية",
     heroTitle: "حيث يلتقي موروث الرماية العُمانية بالمستقبل",
     heroSub: "سجّل ببطاقتك المدنية، واختر هدفك بدقة من لوحة مباشرة، وادفع بأمان، وتابع كل نتيجة لحظة بلحظة — في جميع بطولات السلطنة.",

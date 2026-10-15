@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
-import { readCard, parseCard, sampleCard, type CardResult } from "@/lib/idcard";
+import { IdCapture } from "./id-capture";
 import { GOVERNORATES } from "@/lib/oman";
 import { Button, Card, Field, inputCls } from "@/components/ui";
-import { cn, fmtDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 type Step = "scan" | "details" | "photo";
 const STEPS: { key: Step | "verified" | "card"; label: string }[] = [
@@ -28,58 +28,20 @@ async function cropCircle(file: Blob): Promise<string> {
   return c.toDataURL("image/png");
 }
 
-export function Onboarding({ civilId, verifiedMobile, next, demo }: { civilId: string; verifiedMobile: string | null; next: string; demo: boolean }) {
+export function Onboarding({ civilId, verifiedMobile, next }: { civilId: string; verifiedMobile: string | null; next: string; demo: boolean }) {
   const r = useRouter();
   const [step, setStep] = useState<Step>("scan");
-  const [front, setFront] = useState<Blob | null>(null);
-  const [back, setBack] = useState<Blob | null>(null);
-  const [progress, setProgress] = useState<{ p: number; label: string } | null>(null);
-  const [result, setResult] = useState<CardResult | null>(null);
-  const [scanError, setScanError] = useState<string | null>(null);
+  const [idVerified, setIdVerified] = useState(false);
   const [f, setF] = useState({ fullName: "", tribe: "", mobile: verifiedMobile ?? "", email: "", gender: "MALE", hand: "RIGHT", dob: "", governorate: "Muscat", wilayat: "", idExpiry: "" });
-  const [fromCard, setFromCard] = useState<Set<string>>(new Set());
+  const fromCard = new Set<string>(); // MVP: the card is captured, not read, so nothing is pre-filled
   const [photo, setPhoto] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const bothRef = useRef<HTMLInputElement>(null);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
-
-  async function scan(images: Blob[]) {
-    setScanError(null); setResult(null);
-    try {
-      const text = await readCard(images, (p, label) => setProgress({ p, label }));
-      const res = parseCard(text, civilId);
-      setProgress(null);
-      // MEM-03: reject photos that aren't a readable ID card, or a card that belongs to someone else
-      if (!res.looksLikeCard) { setScanError("We couldn't read an ID card in this photo. Place the whole card on a dark surface in good light, avoid glare, and retake."); return; }
-      if (res.civilId && !res.civilMatches) { setScanError(`This card's number (${res.civilId}) doesn't match the civil ID you verified (${civilId}). Please scan your own ID card.`); return; }
-      setResult(res);
-      const filled = new Set<string>();
-      setF((cur) => {
-        const n = { ...cur };
-        if (res.name) { n.fullName = res.name; filled.add("fullName"); }
-        if (res.dob) { n.dob = res.dob; filled.add("dob"); }
-        if (res.governorate) { n.governorate = res.governorate; filled.add("governorate"); }
-        if (res.wilayat) { n.wilayat = res.wilayat; filled.add("wilayat"); }
-        if (res.expiry) { n.idExpiry = res.expiry; filled.add("idExpiry"); }
-        return n;
-      });
-      setFromCard(filled);
-    } catch {
-      setProgress(null);
-      setScanError("Card reading isn't available right now — you can enter your details manually.");
-    }
-  }
-
-  async function useSample() {
-    const [a, b] = await sampleCard(civilId);
-    setFront(a); setBack(b);
-    await scan([a, b]);
-  }
 
   async function submit() {
     setBusy(true);
     try {
-      await api("/api/auth/register", { body: { ...f, idExpiry: f.idExpiry || null, photo, idScanned: !!result?.civilMatches } });
+      await api("/api/auth/register", { body: { ...f, idExpiry: f.idExpiry || null, photo, idScanned: idVerified } });
       r.push(`/welcome?next=${encodeURIComponent(next)}`);
       r.refresh();
     } catch { setBusy(false); }
@@ -106,57 +68,14 @@ export function Onboarding({ civilId, verifiedMobile, next, demo }: { civilId: s
       {step === "scan" && (
         <Card className="space-y-5 p-6">
           <div>
-            <h1 className="text-xl font-bold">Scan your ID card</h1>
-            <p className="text-sm text-stone-600">We read your name, date of birth and card details automatically so you don&apos;t have to type them. Civil ID <b className="tabular">{civilId}</b> is already verified.</p>
+            <h1 className="text-xl font-bold">Verify your ID card</h1>
+            <p className="text-sm text-stone-600">Scan your civil ID card with your phone camera, or upload photos / a PDF of both sides. Civil ID <b className="tabular">{civilId}</b> is already verified by code.</p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {([["Front of card", front, setFront], ["Back of card", back, setBack]] as const).map(([label, img, setImg]) => (
-              <label key={label} className={cn("relative flex aspect-[1.586] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed text-sm", img ? "border-oasis-500" : "border-sand-300 bg-sand-50 hover:bg-sand-100")}>
-                {img ? <BlobImage blob={img} alt={label} /> : (
-                  <>
-                    <svg viewBox="0 0 24 24" className="h-8 w-8 text-stone-400" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" /><path d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z" /></svg>
-                    <span className="mt-2 font-medium">{label}</span>
-                    <span className="text-xs text-stone-500">Take a photo or upload</span>
-                  </>
-                )}
-                <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) { setImg(file); setResult(null); setScanError(null); } }} />
-              </label>
-            ))}
-          </div>
-          {/* MEM-04: both sides at once */}
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <button type="button" className="font-medium text-brand-600 hover:underline" onClick={() => bothRef.current?.click()}>Upload both sides at once</button>
-            <input ref={bothRef} type="file" accept="image/*" multiple className="sr-only" onChange={(e) => { const fs = [...(e.target.files ?? [])]; if (fs[0]) setFront(fs[0]); if (fs[1]) setBack(fs[1]); setResult(null); setScanError(null); }} />
-            {demo && <><span className="text-stone-300">|</span><button type="button" className="font-medium text-amber-700 hover:underline" onClick={useSample} disabled={!!progress}>Demo: use a sample card</button></>}
-          </div>
-
-          {progress && (
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-stone-600"><span>{progress.label}</span><span>{Math.round(progress.p * 100)}%</span></div>
-              <div className="h-2 overflow-hidden rounded-full bg-sand-200"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${progress.p * 100}%` }} /></div>
-            </div>
-          )}
-          {scanError && <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{scanError}</div>}
-          {result && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-              <div className="mb-2 font-semibold">✓ Card read — please check these details on the next step</div>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
-                <dt className="text-emerald-700">Civil number</dt><dd className="tabular">{result.civilId ?? "—"} {result.civilMatches && "✓ matches"}</dd>
-                <dt className="text-emerald-700">Name</dt><dd>{result.name ?? "— (enter manually)"}</dd>
-                <dt className="text-emerald-700">Date of birth</dt><dd>{result.dob ? fmtDate(result.dob + "T08:00:00Z") : "—"}</dd>
-                <dt className="text-emerald-700">Card expiry</dt><dd>{result.expiry ? fmtDate(result.expiry + "T08:00:00Z") : "—"} {result.expired && <b className="text-rose-700">expired</b>}</dd>
-                <dt className="text-emerald-700">Governorate</dt><dd>{result.governorate ?? "—"}{result.wilayat ? ` · ${result.wilayat}` : ""}</dd>
-              </dl>
-            </div>
-          )}
-          <p className="text-xs text-stone-500">🔒 Your card images are processed on this device and are not uploaded or stored.</p>
+          <IdCapture civilId={civilId} onVerified={setIdVerified} />
+          <p className="text-xs text-stone-500">🔒 Card images stay on this device and are not stored.</p>
           <div className="flex flex-wrap items-center gap-3">
-            {!result ? (
-              <Button size="lg" disabled={!front || !!progress} onClick={() => scan([front!, ...(back ? [back] : [])])}>{progress ? "Reading…" : "Read my card"}</Button>
-            ) : (
-              <Button size="lg" onClick={() => setStep("details")}>Continue</Button>
-            )}
-            <button type="button" className="text-sm text-stone-500 hover:text-stone-800" onClick={() => setStep("details")}>Skip — enter details manually</button>
+            <Button size="lg" disabled={!idVerified} onClick={() => setStep("details")}>Continue</Button>
+            <button type="button" className="text-sm text-stone-500 hover:text-stone-800" onClick={() => setStep("details")}>Skip for now</button>
           </div>
         </Card>
       )}
@@ -167,7 +86,6 @@ export function Onboarding({ civilId, verifiedMobile, next, demo }: { civilId: s
             <h1 className="text-xl font-bold">Your details</h1>
             <p className="text-sm text-stone-600">{fromCard.size ? "We filled in what we could read from your card — check it, then add the rest." : "Fill in your details as they appear on your ID card."}</p>
           </div>
-          {result?.expired && <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Your ID card expired on {fmtDate(f.idExpiry + "T08:00:00Z")}. You can continue, but the Committee may ask to see a valid card at check-in.</div>}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Full name" className="sm:col-span-2" hint={fromCard.has("fullName") ? "From your ID card" : undefined}><input className={inputCls} required value={f.fullName} onChange={set("fullName")} /></Field>
             <Field label="Date of birth" hint={fromCard.has("dob") ? "From your ID card · decides your age category" : "Decides your age category and can't be changed later"}><input type="date" className={inputCls} required value={f.dob} onChange={set("dob")} /></Field>
@@ -217,14 +135,4 @@ export function Onboarding({ civilId, verifiedMobile, next, demo }: { civilId: s
       )}
     </div>
   );
-}
-
-function BlobImage({ blob, alt }: { blob: Blob; alt: string }) {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    const u = URL.createObjectURL(blob);
-    setUrl(u);
-    return () => URL.revokeObjectURL(u);
-  }, [blob]);
-  return url ? <img src={url} alt={alt} className="absolute inset-0 h-full w-full object-cover" /> : null;
 }

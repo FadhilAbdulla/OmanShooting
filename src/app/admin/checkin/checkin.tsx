@@ -103,11 +103,14 @@ export function CheckIn({ data }: { data: PickerData }) {
         <div className="space-y-4">
           {/* Scan box */}
           <Card className="p-4">
-            <form onSubmit={(e) => { e.preventDefault(); submit(code); }} className="flex gap-2">
-              <input ref={input} autoFocus value={code} onChange={(e) => setCode(e.target.value)} placeholder="Scan QR or type civil ID / M123 / #12 and press Enter"
-                className="h-14 flex-1 rounded-xl border-2 border-sand-300 px-4 text-lg focus:border-brand-500 focus:outline-none" />
-              <Button size="lg" className="h-14">Check in</Button>
-              <Button type="button" size="lg" variant="secondary" className="h-14" onClick={() => setCamera((x) => !x)} title="Use device camera">📷</Button>
+            {/* Phones: input full width, actions below (camera first — the usual way to scan on a phone) */}
+            <form onSubmit={(e) => { e.preventDefault(); submit(code); }} className="flex flex-col gap-2 sm:flex-row">
+              <input ref={input} autoFocus value={code} onChange={(e) => setCode(e.target.value)} placeholder="Scan QR or type civil ID / #12"
+                className="h-14 min-w-0 flex-1 rounded-xl border-2 border-sand-300 px-4 text-lg focus:border-brand-500 focus:outline-none" />
+              <div className="flex gap-2">
+                <Button type="button" size="lg" variant="secondary" className="h-14 flex-1 sm:flex-none" onClick={() => setCamera((x) => !x)} title="Use device camera">📷 <span className="sm:hidden">Scan QR</span></Button>
+                <Button size="lg" className="h-14 flex-1 sm:flex-none">Check in</Button>
+              </div>
             </form>
             {camera && <CameraScanner onCode={(c) => { setCamera(false); submit(c); }} />}
           </Card>
@@ -120,7 +123,7 @@ export function CheckIn({ data }: { data: PickerData }) {
               <span className="rounded-full bg-rose-100 px-3 py-1 font-medium text-rose-800">Absent {absent}</span>
               {unpaid > 0 && <span className="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">Unpaid {unpaid}</span>}
               <span className="text-stone-500">of {booked.length} booked · {roster.slots.length} targets</span>
-              <div className="ms-auto flex gap-2">
+              <div className="flex w-full flex-wrap gap-2 sm:ms-auto sm:w-auto">
                 <a className="text-sm text-brand-600 hover:underline" href={`/admin/scoring?group=${groupId}`}>Go to scoring →</a>
                 {waiting > 0 && (
                   <Button size="sm" variant="secondary" onClick={async () => {

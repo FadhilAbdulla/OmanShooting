@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSession, hasRole } from "@/lib/auth";
 import { getDict, pick } from "@/lib/i18n";
 import { checkEligibility } from "@/lib/eligibility";
-import { venueLabel } from "@/lib/events";
+import { VenueBadge } from "@/components/venue";
 import { BookingBoard } from "./board";
 import { isoDate } from "@/lib/utils";
 
@@ -17,7 +17,13 @@ export default async function BookPage({ params, searchParams }: { params: Promi
   const { locale, t } = await getDict();
   const comp = await prisma.competition.findFirst({
     where: { id: c, event: { slug } },
-    include: { event: true, groups: { where: { isFinal: false, startsAt: { gt: new Date() } }, orderBy: { startsAt: "asc" } } },
+    include: {
+      event: true,
+      groups: {
+        where: { isFinal: false, startsAt: { gt: new Date() } }, orderBy: { startsAt: "asc" },
+        include: { _count: { select: { slots: { where: { state: { not: "BLOCKED" } } } } } },
+      },
+    },
   });
   if (!comp) notFound();
   if (comp.event.status === "DRAFT" && !hasRole(s, ["ADMIN"])) notFound();
@@ -33,8 +39,11 @@ export default async function BookPage({ params, searchParams }: { params: Promi
       {comp.event.status === "DRAFT" && <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><b>Test mode</b> — bookings here are test data.</div>}
       <div>
         <p className="text-sm text-stone-500">{pick(comp.event, locale)}</p>
-        <h1 className="text-2xl font-bold">{pick(comp, locale)}</h1>
-        <p className="text-sm text-stone-600">{comp.firearm} · {comp.seriesCount > 1 ? `${comp.seriesCount} × ` : ""}{comp.shotsPerSeries} shots · {venueLabel[comp.venueType]} · You shoot <b>{user.hand === "LEFT" ? "left-handed" : "right-handed"}</b></p>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold">{pick(comp, locale)}</h1>
+          <VenueBadge type={comp.venueType} />
+        </div>
+        <p className="text-sm text-stone-600">{comp.firearm} · {comp.seriesCount > 1 ? `${comp.seriesCount} × ` : ""}{comp.shotsPerSeries} shots · {comp.targetsPerGroup} targets per group · You shoot <b>{user.hand === "LEFT" ? "left-handed" : "right-handed"}</b></p>
       </div>
       {!elig.ok ? (
         <div className="rounded-lg bg-rose-50 p-4 text-rose-800">{elig.reason}</div>
@@ -45,8 +54,9 @@ export default async function BookPage({ params, searchParams }: { params: Promi
           userHand={user.hand}
           labels={{ free: t.free, held: t.held, booked: t.booked, left: t.left, mine: t.mine, remaining: t.remaining }}
           locale={locale}
-          groups={comp.groups.map((g) => ({ id: g.id, label: g.label, date: isoDate(g.date), startsAt: g.startsAt.toISOString(), endsAt: g.endsAt.toISOString() }))}
-          venue={venueLabel[comp.venueType]}
+          groups={comp.groups.map((g) => ({ id: g.id, label: g.label, date: isoDate(g.date), startsAt: g.startsAt.toISOString(), endsAt: g.endsAt.toISOString(), targets: g._count.slots }))}
+          leftTargets={comp.leftHandTargets.filter((n) => n <= comp.targetsPerGroup).length}
+          venueType={comp.venueType}
           moving={moving ? { id: moving.id, targetNo: moving.targetNo, groupId: moving.groupId, label: moving.group.label, startsAt: moving.group.startsAt.toISOString() } : null}
         />
       )}

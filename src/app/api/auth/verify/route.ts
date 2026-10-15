@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { handle, ok } from "@/lib/api";
-import { startSession } from "@/lib/auth";
+import { startSession, STAFF } from "@/lib/auth";
 import { signTemp } from "@/lib/session";
 import { AppError } from "@/lib/utils";
 
@@ -26,7 +26,9 @@ export const POST = handle(async (req: Request) => {
   const consumed = await prisma.otpCode.updateMany({ where: { id: otp.id, consumedAt: null }, data: { consumedAt: new Date() } });
   if (!consumed.count) throw new AppError("Code already used", 401);
 
-  const user = await prisma.user.findUnique({ where: { civilId } });
+  const user = await prisma.user.findUnique({ where: { civilId }, include: { roles: { select: { role: true } } } });
+  // Staff accounts sign in only with username + password
+  if (user?.roles.some((r) => STAFF.includes(r.role))) throw new AppError("Committee staff sign in with username and password on the staff portal", 403, "STAFF_ACCOUNT");
   if (user) {
     const s = await startSession(user.id);
     return ok({ ok: true, roles: s.roles });

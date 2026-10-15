@@ -13,7 +13,7 @@ export function StatusBar({ id, slug, status, checks, ready, testCount }: { id: 
     <Card className="flex flex-wrap items-center gap-4 p-4">
       {status === "DRAFT" ? (
         <>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 basis-full sm:flex-1 sm:basis-0">
             <div className="text-sm font-semibold">Draft · test mode</div>
             <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
               {checks.map((c) => <li key={c.label} className={c.ok ? "text-oasis-600" : "text-rose-600"}>{c.ok ? "✓" : "✕"} {c.label}</li>)}
@@ -26,7 +26,7 @@ export function StatusBar({ id, slug, status, checks, ready, testCount }: { id: 
         </>
       ) : (
         <>
-          <div className="flex-1 text-sm"><b>{status === "PUBLISHED" ? "Live" : "Closed"}</b> — visible to the public. {status === "PUBLISHED" && "Registration opens/closes automatically by the dates in Settings."}</div>
+          <div className="basis-full text-sm sm:flex-1 sm:basis-0"><b>{status === "PUBLISHED" ? "Live" : "Closed"}</b> — visible to the public. {status === "PUBLISHED" && "Registration opens/closes automatically by the dates in Settings."}</div>
           <LinkButton href={`/events/${slug}`} variant="secondary" size="sm">View public page ↗</LinkButton>
           <LinkButton href={`/tv/${slug}`} variant="secondary" size="sm">TV mode ↗</LinkButton>
           {status === "PUBLISHED" ? (

@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export default async function Register({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const tmp = await verifyTemp<{ civilId: string; mobile?: string | null }>((await cookies()).get("reg")?.value);
   const next = safeNext((await searchParams).next);
-  if (!tmp) redirect(`/login?next=${encodeURIComponent(next)}`);
+  if (!tmp) redirect(`/signup?next=${encodeURIComponent(next)}`);
   return <Onboarding civilId={tmp.civilId} verifiedMobile={tmp.mobile ?? null} next={next} demo={isDemo()} />;
 }

@@ -20,6 +20,7 @@ import { checkEligibility } from "./eligibility";
 import { AppError, ref } from "./utils";
 import { sendEmail, sendSms } from "./notify";
 import { audit } from "./audit";
+import { invoiceUrl, issueInvoice } from "./invoice";
 
 type Tx = Prisma.TransactionClient;
 const ACTIVE = ["PENDING_PAYMENT", "CONFIRMED"] as const;
@@ -314,6 +315,7 @@ export async function confirmOrder(orderId: string, actorId: string | null, note
       data: { status: "PAID", paidAt: new Date(), reviewedById: actorId, reviewNote: note },
       include: { user: true },
     });
+    await issueInvoice(tx, orderId);
     if (actorId) await audit(actorId, "payment.approve", "Order", orderId, { ref: updated.ref }, note, tx);
     return { order: updated, groupIds: bookings.map((b) => b.groupId) };
   });
@@ -324,8 +326,10 @@ export async function confirmOrder(orderId: string, actorId: string | null, note
   }
   await notifySlots(res.groupIds);
   await publish(channels.admin, { type: "payment" });
-  await sendSms(res.order.user.mobile, `Your booking ${res.order.ref} is confirmed. Total ${res.order.total} OMR.`);
-  await sendEmail(res.order.user.email, "Booking confirmed", `Order ${res.order.ref} is confirmed.`);
+  // The electronic invoice is delivered with the confirmation (test orders have none)
+  const invoice = res.order.isTest ? "" : ` Invoice: ${invoiceUrl(res.order.id)}`;
+  await sendSms(res.order.user.mobile, `Your booking ${res.order.ref} is confirmed. Total ${res.order.total} OMR.${invoice}`);
+  await sendEmail(res.order.user.email, "Booking confirmed", `Order ${res.order.ref} is confirmed.${invoice}`);
 }
 
 export async function failOrder(orderId: string, status: "REJECTED" | "CANCELLED" | "EXPIRED", actorId: string | null, note?: string) {
@@ -463,6 +467,7 @@ export async function staffAssign(slotId: string, civilId: string, actorId: stri
     const order = await tx.order.create({
       data: { ref: ref("ORD"), userId: user.id, total: price, method: price.isZero() ? "FREE" : "CASH", status: "PAID", paidAt: new Date(), reviewedById: actorId, reviewNote: "On-site at check-in", isTest },
     });
+    await issueInvoice(tx, order.id);
     await tx.booking.create({
       data: {
         userId: user.id, slotId, groupId: slot.groupId, competitionId: comp.id, orderId: order.id, targetNo: slot.targetNo,

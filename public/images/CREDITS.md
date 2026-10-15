@@ -11,3 +11,4 @@ Replace with the Committee's own championship photography when available.
 | adobe-wall.jpg | Bree Evans | https://unsplash.com/photos/QgoHNnLeYCI |
 | fort-archway.jpg | Hongbin | https://unsplash.com/photos/EhRm-BdqhnE |
 | nizwa-tower.jpg | ahmed nasser | https://unsplash.com/photos/0VxDlR2igPk |
+| hero-shooter.jpg | Jahanzeb Ahsan | https://unsplash.com/photos/ePoTpp0zBZs |

@@ -16,13 +16,13 @@ export function LocaleToggle({ locale }: { locale: string }) {
   );
 }
 
-export function LogoutButton({ label }: { label: string }) {
+export function LogoutButton({ label, to = "/", className = "rounded-md px-2 py-1 text-sm hover:bg-white/10" }: { label: string; to?: string; className?: string }) {
   return (
     <button
-      className="rounded-md px-2 py-1 text-sm hover:bg-white/10"
+      className={className}
       onClick={async () => {
         await fetch("/api/auth/logout", { method: "POST" });
-        window.location.href = "/";
+        window.location.href = to;
       }}
     >
       {label}

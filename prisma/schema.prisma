@@ -105,6 +105,11 @@ model User {
   photo       String? // data URL (MVP) — move to private object storage + signed URLs (SEC-07)
   idExpiry    DateTime? @db.Date // read from the ID card (MEM-02)
   idScanned   Boolean   @default(false) // card was scanned and its number matched the verified civil ID
+  // Committee staff sign in with username + password (shooters use civil ID + OTP)
+  username     String?   @unique
+  passwordHash String? // scrypt$N$r$p$salt$hash
+  failedLogins Int       @default(0)
+  lockedUntil  DateTime? @db.Timestamptz(3)
   createdAt   DateTime @db.Timestamptz(3)   @default(now())
   updatedAt   DateTime @db.Timestamptz(3)   @updatedAt
   roles       UserRole[]
@@ -265,6 +270,9 @@ model Order {
   reviewedById String?
   reviewNote   String?
   isTest       Boolean       @default(false)
+  // Electronic invoice: gap-free sequential number issued when the order is paid (test orders get none)
+  invoiceNo    Int?          @unique
+  invoicedAt   DateTime?     @db.Timestamptz(3)
   createdAt    DateTime @db.Timestamptz(3)      @default(now())
   user         User          @relation(fields: [userId], references: [id])
   bookings     Booking[]
@@ -306,4 +314,18 @@ model Booking {
   @@index([competitionId, status])
   @@index([userId, competitionId])
   @@index([orderId])
+}
+
+// WEB-06: messages sent from the Contact Us page
+model ContactMessage {
+  id        String    @id @default(cuid())
+  name      String
+  mobile    String?
+  email     String?
+  subject   String
+  message   String
+  handledAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([createdAt])
 }

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { hashPassword } from "../src/lib/password";
 
 const prisma = new PrismaClient();
 const D = 86_400_000;
@@ -14,6 +15,23 @@ const GOVS = ["Muscat", "Ad Dakhiliyah", "North Al Batinah", "South Al Batinah",
 
 // Same rule as the app: demo conveniences are on unless DEMO_MODE is 0/false/off
 const demoOn = () => !["0", "false", "off"].includes((process.env.DEMO_MODE ?? "").toLowerCase());
+
+// Demo staff sign in with email + password on /staff/login (shooters use civil ID + OTP)
+const DEMO_PASSWORD = "root123";
+const STAFF = [
+  { civilId: "10000001", fullName: "Committee Administrator", role: "ADMIN", email: "admin@shooting.demo" },
+  { civilId: "10000002", fullName: "Chief Judge Hamdan", role: "JUDGE", email: "judge@shooting.demo" },
+  { civilId: "10000003", fullName: "Reception Desk", role: "RECEPTION", email: "reception@shooting.demo" },
+] as const;
+
+/** Demo only: give the seeded staff their email logins if they have none yet (also upgrades older demo databases). */
+async function ensureDemoStaffLogins() {
+  if (!demoOn()) return;
+  const passwordHash = await hashPassword(DEMO_PASSWORD);
+  for (const s of STAFF) {
+    await prisma.user.updateMany({ where: { civilId: s.civilId, username: null }, data: { username: s.email, email: s.email, passwordHash } });
+  }
+}
 
 const SEED_CIVIL_IDS = [...Array(3)].map((_, i) => String(10000001 + i)).concat([...Array(40)].map((_, i) => String(20000001 + i)));
 
@@ -50,6 +68,7 @@ async function main() {
   // Deploy-time guards: never wipe data that people created.
   if (!forced && process.argv.includes("--if-empty") && (await prisma.user.count()) > 0) {
     if (!process.argv.includes("--refresh-demo") || !(await demoIsStale())) {
+      await ensureDemoStaffLogins();
       console.log("Database already has data — skipping seed.");
       return;
     }
@@ -61,14 +80,10 @@ async function main() {
     prisma.auditLog.deleteMany(), prisma.user.deleteMany(),
   ]);
 
-  const staff = [
-    { civilId: "10000001", fullName: "Committee Administrator", role: "ADMIN" },
-    { civilId: "10000002", fullName: "Chief Judge Hamdan", role: "JUDGE" },
-    { civilId: "10000003", fullName: "Reception Desk", role: "RECEPTION" },
-  ] as const;
-  for (const s of staff) {
+  for (const s of STAFF) {
     await prisma.user.create({ data: { civilId: s.civilId, fullName: s.fullName, mobile: "99444419", gender: "MALE", hand: "RIGHT", dob: new Date("1985-01-01"), governorate: "Muscat", roles: { create: [{ role: s.role }, { role: "SHOOTER" }] } } });
   }
+  await ensureDemoStaffLogins();
   const shooters: Awaited<ReturnType<typeof prisma.user.create>>[] = [];
   for (let i = 0; i < NAMES.length; i++) {
     const female = i >= 24 && i < 32;
@@ -173,7 +188,7 @@ async function main() {
 
   if (forced) await prisma.auditLog.create({ data: { action: "demo.reseed", entity: "System", entityId: force!, reason: "Owner-requested demo refresh" } });
   console.log(`Seeded: ${shooters.length} shooters, ${leaves.length} competitions, ${seq} participants.`);
-  console.log(`Admin 10000001 · Judge 10000002 · Reception 10000003 · Shooters 20000001–${20000000 + shooters.length}`);
+  console.log(`Staff: ${STAFF.map((s) => s.email).join(" · ")} (password ${DEMO_PASSWORD}) · Shooters 20000001–${20000000 + shooters.length}`);
   console.log(`Unused team cup id (for load test): ${team.id}`);
 }
 

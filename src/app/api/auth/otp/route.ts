@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomInt } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { handle, ok } from "@/lib/api";
+import { STAFF } from "@/lib/auth";
 import { sendSms } from "@/lib/notify";
 import { AppError, isDemo } from "@/lib/utils";
 import { normaliseMobile } from "@/lib/oman";
@@ -10,6 +11,8 @@ const Body = z.object({
   civilId: z.string().regex(/^\d{6,12}$/, "Civil ID must be 6–12 digits"),
   // Optional for existing members (their code goes to the number on file); required for new shooters
   mobile: z.string().optional().nullable(),
+  // "signin" accepts existing shooters, "signup" only new civil IDs; omitted keeps the combined flow
+  intent: z.enum(["signin", "signup"]).optional(),
 });
 
 export const POST = handle(async (req: Request) => {
@@ -27,7 +30,12 @@ export const POST = handle(async (req: Request) => {
 
   // Members get the code on the mobile we already hold for them; new shooters on the number they entered
   // (which becomes their verified mobile after they confirm the code).
-  const user = await prisma.user.findUnique({ where: { civilId } });
+  const user = await prisma.user.findUnique({ where: { civilId }, include: { roles: { select: { role: true } } } });
+  const staff = !!user?.roles.some((r) => STAFF.includes(r.role));
+  if (body.intent === "signin" && !user) throw new AppError("No membership found for this civil ID — sign up to create one", 404, "NOT_MEMBER");
+  // Staff never sign in by OTP — only with username + password on the staff portal
+  if (staff) throw new AppError("Committee staff sign in with username and password on the staff portal", 403, "STAFF_ACCOUNT");
+  if (body.intent === "signup" && user) throw new AppError("This civil ID is already registered — please sign in", 409, "ALREADY_MEMBER");
   if (!user && !entered) throw new AppError("Enter your mobile number so we can text you a verification code", 422);
   const target = user ? normaliseMobile(user.mobile) ?? user.mobile : entered!;
 

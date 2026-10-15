@@ -21,7 +21,7 @@ export function Toaster() {
     return () => void listeners.delete(l);
   }, []);
   return (
-    <div className="fixed bottom-4 inset-x-0 z-50 flex flex-col items-center gap-2 pointer-events-none px-4 no-print">
+    <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] inset-x-0 z-50 md:bottom-4 flex flex-col items-center gap-2 pointer-events-none px-4 no-print">
       {items.map((t) => (
         <div key={t.id} className={`pointer-events-auto rounded-lg px-4 py-3 text-sm shadow-lg max-w-md w-full ${t.kind === "err" ? "bg-rose-700 text-white" : t.kind === "info" ? "bg-stone-800 text-white" : "bg-oasis-600 text-white"}`}>
           {t.msg}

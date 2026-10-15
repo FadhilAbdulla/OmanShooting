@@ -31,7 +31,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
       </div>
       <div className="mx-auto mt-6 max-w-sm"><MemberCard user={user} /></div>
       <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-        <LinkButton href={continuing ? next : "/#championships"} size="lg">{continuing ? "Continue to choose your target →" : "Book your first target →"}</LinkButton>
+        <LinkButton href={continuing ? next : "/events"} size="lg">{continuing ? "Continue to choose your target →" : "Book your first target →"}</LinkButton>
         <LinkButton href="/me" size="lg" variant="secondary">Go to My bookings</LinkButton>
       </div>
       <p className="mt-6 text-center text-xs text-stone-500">Your card is always available under <b>My bookings</b>. Tip: add this site to your phone&apos;s home screen for quick access on competition day.</p>

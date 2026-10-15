@@ -41,9 +41,9 @@ export default async function EventAdmin({ params, searchParams }: { params: Pro
         </div>
       </div>
       <StatusBar id={ev.id} slug={ev.slug} status={ev.status} checks={checks} ready={ready} testCount={testCount} />
-      <div className="flex gap-1 border-b border-sand-200">
+      <div className="-mx-4 flex gap-1 overflow-x-auto border-b border-sand-200 px-4 [scrollbar-width:none] lg:mx-0 lg:px-0">
         {tabs.map(([k, l]) => (
-          <Link key={k} href={`?tab=${k}`} className={cn("-mb-px border-b-2 px-4 py-2 text-sm", tab === k ? "border-brand-500 font-medium text-brand-700" : "border-transparent text-stone-600 hover:text-stone-900")}>{l}</Link>
+          <Link key={k} href={`?tab=${k}`} className={cn("-mb-px shrink-0 whitespace-nowrap border-b-2 px-4 py-2 text-sm", tab === k ? "border-brand-500 font-medium text-brand-700" : "border-transparent text-stone-600 hover:text-stone-900")}>{l}</Link>
         ))}
       </div>
       {tab === "competitions" && (
